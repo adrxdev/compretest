@@ -13,7 +13,7 @@ const create = async (req, res) => {
         }
 
         // 2. Validate required fields
-        const { name, venue, start_time, end_time } = req.body;
+        const { name } = req.body;
         if (!name || !start_time || !end_time) {
             return res.status(400).json({
                 error: 'Missing required fields',
