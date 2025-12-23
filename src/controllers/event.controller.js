@@ -6,6 +6,10 @@ const qrService = require('../services/qr.service');
 const attendanceModel = require('../models/attendance.model');
 
 const create = async (req, res) => {
+    // TEMPORARY DEBUG LOG
+    console.log("🔍 CREATE EVENT BODY:", JSON.stringify(req.body, null, 2));
+    console.log("🔍 USER:", JSON.stringify(req.user, null, 2));
+
     try {
         // 1. Check if user is admin
         if (req.user.role !== 'admin') {
