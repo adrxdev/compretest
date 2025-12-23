@@ -3,12 +3,16 @@
 -- Enable uuid-ossp extension for UUID generation if needed (optional, using SERIAL/INTEGER for simplicity based on requirements, but UUID is better for security)
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Define User Roles
-CREATE TYPE user_role AS ENUM ('student', 'admin');
+-- Define User Roles (idempotent)
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('student', 'admin');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 1. Users Table
 -- Stores all users (students and admins)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -20,7 +24,7 @@ CREATE TABLE users (
 
 -- 2. Events Table
 -- Stores details of classes or events
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     id SERIAL PRIMARY KEY,
     title VARCHAR(150) NOT NULL, -- e.g., "Data Structures Lecture"
     venue VARCHAR(100), -- e.g., "Hall A"
@@ -33,7 +37,7 @@ CREATE TABLE events (
 
 -- 3. QR Sessions Table
 -- Stores dynamic QR tokens generated during an event
-CREATE TABLE qr_sessions (
+CREATE TABLE IF NOT EXISTS qr_sessions (
     id SERIAL PRIMARY KEY,
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
     token VARCHAR(255) NOT NULL, -- Unique string encoded in the QR
@@ -43,7 +47,7 @@ CREATE TABLE qr_sessions (
 
 -- 4. Attendance Logs Table
 -- Records the actual attendance scan
-CREATE TABLE attendance_logs (
+CREATE TABLE IF NOT EXISTS attendance_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
@@ -56,7 +60,7 @@ CREATE TABLE attendance_logs (
 
 -- 5. OTP Tokens Table
 -- Stores hashed OTPs for authentication
-CREATE TABLE otp_tokens (
+CREATE TABLE IF NOT EXISTS otp_tokens (
     id SERIAL PRIMARY KEY,
     email VARCHAR(100) NOT NULL,
     otp_hash VARCHAR(255) NOT NULL,
@@ -64,10 +68,10 @@ CREATE TABLE otp_tokens (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_enrollment ON users(enrollment_no);
-CREATE INDEX idx_events_start_time ON events(start_time);
-CREATE INDEX idx_qr_sessions_event_id ON qr_sessions(event_id);
-CREATE INDEX idx_attendance_logs_user_id ON attendance_logs(user_id);
-CREATE INDEX idx_attendance_logs_event_id ON attendance_logs(event_id);
+-- Indexes for performance (idempotent)
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_enrollment ON users(enrollment_no);
+CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
+CREATE INDEX IF NOT EXISTS idx_qr_sessions_event_id ON qr_sessions(event_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id ON attendance_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_logs_event_id ON attendance_logs(event_id);

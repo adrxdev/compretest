@@ -24,7 +24,7 @@ export default function ProfileSetup() {
             const res = await api.put('/users/profile', formData);
             if (res.data.token) {
                 login(res.data.token); // Update context with new user data
-                navigate('/dashboard');
+                navigate('/student');
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to update profile');
@@ -39,7 +39,7 @@ export default function ProfileSetup() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <img src="/mitadtlogo.png" alt="MIT ADT Logo" className="mit-logo" />
                     <div>
-                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>Smart Attendance</h1>
+                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>AttendEase</h1>
                     </div>
                 </div>
             </div>

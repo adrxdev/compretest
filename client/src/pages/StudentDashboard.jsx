@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function StudentDashboard() {
     const { user, logout } = useAuth();
@@ -14,6 +14,7 @@ export default function StudentDashboard() {
     const [statusData, setStatusData] = useState(null); // For success screen
     const [manualEventId, setManualEventId] = useState('');
     const [manualToken, setManualToken] = useState('');
+    const [history, setHistory] = useState([]); // Attendance History
     const scannerRef = useRef(null);
 
     // Profile Check
@@ -22,6 +23,31 @@ export default function StudentDashboard() {
             navigate('/profile-setup');
         }
     }, [user, navigate]);
+
+    // Check for Deep Link (Direct Scan)
+    const [searchParams] = useSearchParams();
+    useEffect(() => {
+        const eventId = searchParams.get('event_id');
+        const token = searchParams.get('token');
+        if (eventId && token && view === 'home' && !statusData) {
+            handleAttendanceSubmit(JSON.stringify({ eventId, token }), true);
+        }
+    }, [searchParams, view]);
+
+    // Fetch History on Mount and after success
+    useEffect(() => {
+        fetchHistory();
+    }, [user]);
+
+    const fetchHistory = async () => {
+        if (!user) return;
+        try {
+            const res = await api.get('/attendance/my-history');
+            setHistory(res.data);
+        } catch (err) {
+            console.error('Failed to load history', err);
+        }
+    };
 
     // Cleanup scanner on unmount
     useEffect(() => {
@@ -81,13 +107,27 @@ export default function StudentDashboard() {
         // console.warn(`Code scan error = ${error}`);
     };
 
-    const handleAttendanceSubmit = async (qrData) => {
+    const handleAttendanceSubmit = async (qrData, isDirect = false) => {
         try {
             let payload = {};
 
-            // Try parsing JSON (New Format)
+            // Helper to extract params from URL or Object
+            const extract = (data) => {
+                if (typeof data === 'string' && data.includes('event_id=')) {
+                    // It's a URL string
+                    const url = new URL(data.startsWith('http') ? data : window.location.origin + data);
+                    return {
+                        eventId: url.searchParams.get('event_id'),
+                        token: url.searchParams.get('token')
+                    };
+                }
+                // Try JSON
+                const parsed = JSON.parse(data);
+                return parsed;
+            };
+
             try {
-                const data = JSON.parse(qrData);
+                const data = extract(qrData);
                 if (data.eventId && data.token) { // Ensure keys match EventDetails
                     payload = {
                         event_id: data.eventId,
@@ -98,17 +138,20 @@ export default function StudentDashboard() {
                     throw new Error("Invalid QR Format");
                 }
             } catch (e) {
+                console.error(e);
                 throw new Error("Invalid QR Code. Please use Manual Entry.");
             }
 
-            await api.post('/attendance', payload);
+            const res = await api.post('/attendance', payload);
 
             setStatusData({
                 name: user.name,
                 enrollment_no: user.enrollment_no,
-                time: new Date().toLocaleString()
+                time: new Date().toLocaleString(),
+                message: res.data.message || 'Attendance Marked'
             });
             setView('success');
+            fetchHistory(); // Refresh history
 
         } catch (err) {
             setError(err.response?.data?.error || err.message || 'Attendance Failed');
@@ -130,6 +173,7 @@ export default function StudentDashboard() {
                 time: new Date().toLocaleString()
             });
             setView('success');
+            fetchHistory(); // Refresh history
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to mark attendance');
         }
@@ -139,17 +183,78 @@ export default function StudentDashboard() {
         <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-grey)' }}>
 
             {/* Header */}
-            <div className="mit-header">
+            <div className="mit-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <img src="/mitadtlogo.png" alt="MIT ADT Logo" className="mit-logo" />
                     <div>
-                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>Smart Attendance</h1>
+                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>AttendEase</h1>
                         <small style={{ color: 'var(--text-light)' }}>MIT ADT University</small>
                     </div>
                 </div>
-                <button onClick={logout} style={{ background: 'none', border: '1px solid var(--mit-purple)', color: 'var(--mit-purple)', padding: '0.5rem 1rem', borderRadius: '4px' }}>
-                    Logout
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: 'auto' }}>
+                    <button
+                        className="header-profile-btn"
+                        onClick={() => navigate('/profile')}
+                        title="My Profile"
+                        style={{
+                            background: '#fff',
+                            border: '1px solid #ddd',
+                            color: '#555',
+                            width: '44px',
+                            height: '44px',
+                            borderRadius: '50%',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s',
+                            padding: 0
+                        }}
+                        onMouseOver={(e) => {
+                            e.currentTarget.style.background = '#f5f5f5';
+                            e.currentTarget.style.borderColor = '#bbb';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.currentTarget.style.background = '#fff';
+                            e.currentTarget.style.borderColor = '#ddd';
+                            e.currentTarget.style.transform = 'scale(1)';
+                        }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <button
+                        className="header-signout-btn"
+                        onClick={logout}
+                        title="Sign out"
+                        style={{
+                            background: 'var(--mit-purple)',
+                            border: 'none',
+                            color: 'white',
+                            padding: '0.6rem 1rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            minHeight: '44px'
+                        }}
+                        onMouseOver={(e) => {
+                            e.currentTarget.style.opacity = '0.9';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.currentTarget.style.opacity = '1';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                        }}>
+                        Sign out
+                    </button>
+                </div>
             </div>
 
             {/* Content Area */}
@@ -170,54 +275,80 @@ export default function StudentDashboard() {
                 )}
 
                 {view === 'home' && (
-                    <div className="mit-card" style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <p style={{ marginBottom: '1.5rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                            Scan the QR code displayed on the screen to mark your attendance.
-                        </p>
+                    <>
+                        <div className="mit-card" style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <p style={{ marginBottom: '1.5rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                                Scan the QR code displayed on the screen to mark your attendance.
+                            </p>
 
-                        <button
-                            onClick={startScanner}
-                            style={{
-                                width: '100%',
-                                padding: '1.5rem',
-                                borderRadius: '8px',
-                                border: '2px dashed var(--mit-purple)',
-                                background: '#f3e5f5',
-                                color: 'var(--mit-purple)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                transition: 'background 0.2s',
-                                marginBottom: '1rem'
-                            }}
-                        >
-                            <span style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📷</span>
-                            <span style={{ fontSize: '1.1rem', fontWeight: '600' }}>Tap to Scan QR</span>
-                        </button>
+                            <button
+                                onClick={startScanner}
+                                style={{
+                                    width: '100%',
+                                    padding: '1.5rem',
+                                    borderRadius: '8px',
+                                    border: '2px dashed var(--mit-purple)',
+                                    background: '#f3e5f5',
+                                    color: 'var(--mit-purple)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.2s',
+                                    marginBottom: '1rem'
+                                }}
+                            >
+                                <span style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📷</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: '600' }}>Tap to Scan QR</span>
+                            </button>
 
-                        <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1rem 0' }}>
-                            <div style={{ flex: 1, height: '1px', background: '#ddd' }}></div>
-                            <span style={{ color: '#999', fontSize: '0.9rem' }}>OR</span>
-                            <div style={{ flex: 1, height: '1px', background: '#ddd' }}></div>
+                            <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1rem 0' }}>
+                                <div style={{ flex: 1, height: '1px', background: '#ddd' }}></div>
+                                <span style={{ color: '#999', fontSize: '0.9rem' }}>OR</span>
+                                <div style={{ flex: 1, height: '1px', background: '#ddd' }}></div>
+                            </div>
+
+                            <button
+                                onClick={() => { setView('manual'); setError(''); }}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.8rem',
+                                    background: 'white',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    fontSize: '0.95rem',
+                                    color: 'var(--text-dark)',
+                                }}
+                            >
+                                Enter Code Manually
+                            </button>
                         </div>
 
-                        <button
-                            onClick={() => { setView('manual'); setError(''); }}
-                            style={{
-                                width: '100%',
-                                padding: '0.8rem',
-                                background: 'white',
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                                fontSize: '0.95rem',
-                                color: 'var(--text-dark)',
-                            }}
-                        >
-                            Enter Code Manually
-                        </button>
-                    </div>
+
+                        {/* Recent Attendance History */}
+                        {history.length > 0 && (
+                            <div style={{ width: '100%', maxWidth: '400px', marginTop: '2rem' }}>
+                                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-light)', borderBottom: '2px solid var(--mit-purple)', display: 'inline-block', paddingBottom: '4px' }}>
+                                    Past Marked Attendance
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {history.map((record, idx) => (
+                                        <div key={idx} style={{ background: 'white', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--success-green)', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                <strong style={{ color: 'var(--mit-purple)', fontSize: '0.95rem' }}>{record.event_name}</strong>
+                                                <span style={{ fontSize: '0.8rem', color: '#888' }}>{new Date(record.scan_time).toLocaleDateString()}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                                <span style={{ color: 'var(--text-light)' }}>{record.venue || 'Main Hall'}</span>
+                                                <span style={{ color: 'var(--success-green)', fontWeight: 'bold' }}>{record.status} • {new Date(record.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {view === 'scanner' && (
@@ -265,8 +396,9 @@ export default function StudentDashboard() {
                         }}>
                             <span style={{ fontSize: '3rem', color: 'white' }}>✓</span>
                         </div>
-                        <h2 style={{ color: 'var(--success-green)', marginBottom: '0.5rem' }}>Attendance Marked</h2>
-                        <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>{statusData.time}</p>
+                        <h2 style={{ color: 'var(--success-green)', marginBottom: '0.5rem' }}>{statusData.message}</h2>
+                        <p style={{ color: 'var(--success-green)', fontWeight: 'bold', marginBottom: '0.25rem' }}>Successfully Marked</p>
+                        <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginTop: 0 }}>{statusData.time}</p>
 
                         <div style={{ marginTop: '2rem', background: 'var(--bg-grey)', padding: '1rem', borderRadius: '4px', textAlign: 'left' }}>
                             <p style={{ margin: '0.5rem 0' }}><small style={{ color: 'var(--text-light)' }}>NAME</small><br /><strong>{statusData.name}</strong></p>
@@ -283,6 +415,6 @@ export default function StudentDashboard() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

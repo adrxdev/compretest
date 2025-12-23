@@ -22,4 +22,12 @@ app.use('/events', authenticateToken, eventRoutes);
 app.use('/qr-sessions', authenticateToken, qrRoutes);
 app.use('/attendance', authenticateToken, attendanceRoutes);
 
+// Serve Frontend in Production
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
 module.exports = app;

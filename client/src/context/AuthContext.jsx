@@ -26,9 +26,14 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = (token) => {
-        localStorage.setItem('token', token);
-        const decoded = jwtDecode(token);
-        setUser(decoded);
+        try {
+            localStorage.setItem('token', token);
+            const decoded = jwtDecode(token);
+            setUser(decoded);
+        } catch (e) {
+            console.error("Login Failed: Invalid Token", e);
+            logout();
+        }
     };
 
     const logout = () => {

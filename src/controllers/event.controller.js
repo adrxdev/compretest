@@ -1,4 +1,6 @@
 const eventModel = require('../models/event.model');
+const db = require('../config/db');
+const auditStore = require('../utils/auditStore');
 const qrModel = require('../models/qr.model');
 const qrService = require('../services/qr.service');
 const attendanceModel = require('../models/attendance.model');
@@ -72,7 +74,27 @@ const getStats = async (req, res) => {
     try {
         const { id } = req.params;
         const count = await attendanceModel.countByEvent(id);
-        res.status(200).json({ count });
+        const event = await eventModel.findById(id);
+        res.status(200).json({
+            count,
+            phase: event.attendance_phase || 'CLOSED',
+            session_state: event.session_state || 'NOT_STARTED',
+            name: event.name,
+            venue: event.venue
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+
+
+const getAuditAlerts = async (req, res) => {
+    try {
+        const event_id = req.params.id;
+        const alerts = auditStore.getAlerts(event_id);
+        res.json(alerts);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -107,18 +129,60 @@ const getRecentAttendance = async (req, res) => {
         res.status(200).json(recentLogs);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: error.message });
     }
 };
 
+const startSession = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await eventModel.updateSessionState(id, 'ACTIVE');
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+const pauseSession = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await eventModel.updateSessionState(id, 'NOT_STARTED'); // Pause = Back to Not Started logic-wise for now, or new state? 
+        // User req: "PAUSE SESSION → session_state = NOT_STARTED"
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+const stopSession = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await eventModel.updateSessionState(id, 'STOPPED');
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// Kept for backward compat if needed, but client updates will remove calls
+const openEntry = async (req, res) => { res.status(410).json({ error: 'Deprecated' }); };
+const openExit = async (req, res) => { res.status(410).json({ error: 'Deprecated' }); };
+const closeAttendance = async (req, res) => { res.status(410).json({ error: 'Deprecated' }); };
+
 module.exports = {
     create,
+    listEvents,
     startQr,
     stopQr,
     getCurrentQr,
-    getCurrentQr,
-    listEvents,
     getStats,
     exportCsv,
     getRecentAttendance,
+    getAuditAlerts,
+    openEntry,
+    openExit,
+    closeAttendance,
+    startSession,
+    pauseSession,
+    stopSession
 };

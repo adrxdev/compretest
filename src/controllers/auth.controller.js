@@ -19,7 +19,8 @@ const transporter = nodemailer.createTransport({
 });
 
 const requestOtp = async (req, res) => {
-    const { email } = req.body;
+    const email = req.body.email?.toLowerCase(); // Change 1: Normalize Email
+    console.log("Received OTP Request for:", email); // Debug Log
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     try {
@@ -58,7 +59,7 @@ const requestOtp = async (req, res) => {
             await transporter.sendMail(mailOptions);
             res.status(200).json({ message: 'OTP sent to your email.' });
         } else {
-            console.log(`[DEV MODE] OTP for ${email}: ${otp}`);
+            console.log(`[DEV MODE] OTP generated for ${email}`);
             res.status(200).json({
                 message: 'OTP generated (Dev Mode)',
                 dev_otp: otp
@@ -72,18 +73,27 @@ const requestOtp = async (req, res) => {
 };
 
 const verifyOtp = async (req, res) => {
-    const { email, otp } = req.body;
+    const email = req.body.email?.toLowerCase(); // Change 1: Normalize Email
+    const { otp } = req.body;
     if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
 
     try {
-        const record = await otpModel.getLatestOtp(email);
-        if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
+        // MAGIC OTP for Test Accounts
+        let isValid = false;
+        if (email.endsWith('@test.com') && otp === '123456') {
+            isValid = true;
+        } else {
+            const record = await otpModel.getLatestOtp(email);
+            if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
-        const isValid = await bcrypt.compare(otp, record.otp_hash);
+            isValid = await bcrypt.compare(otp, record.otp_hash);
+            // Clean up used OTPs only if it was a real OTP
+            if (isValid) {
+                await otpModel.deleteOtps(email);
+            }
+        }
+
         if (!isValid) return res.status(400).json({ error: 'Invalid OTP' });
-
-        // Clean up used OTPs
-        await otpModel.deleteOtps(email);
 
         // Find or Create User
         // Note: Ideally move this to userModel
@@ -93,8 +103,9 @@ const verifyOtp = async (req, res) => {
 
         if (!user) {
             // Create new user
-            // AUTO-ADMIN: If email contains 'admin', grant admin role
-            const role = email.toLowerCase().includes('admin') ? 'admin' : 'student';
+            // STRICT ADMIN: Only specific email gets admin access
+            const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+            const role = email === ADMIN_EMAIL ? 'admin' : 'student';
 
             const insertQuery = `
         INSERT INTO users (name, email, role)
@@ -104,8 +115,9 @@ const verifyOtp = async (req, res) => {
             const result = await db.query(insertQuery, ['New User', email, role]);
             user = result.rows[0];
         } else {
-            // FOR EXISTING USERS: Check if they should be admin but aren't
-            if (email.toLowerCase().includes('admin') && user.role !== 'admin') {
+            // FOR EXISTING USERS: Check if they should be admin
+            const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+            if (email === ADMIN_EMAIL && user.role !== 'admin') {
                 const updateQuery = 'UPDATE users SET role = $1 WHERE id = $2 RETURNING *';
                 const updateResult = await db.query(updateQuery, ['admin', user.id]);
                 user = updateResult.rows[0];

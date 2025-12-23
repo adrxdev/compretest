@@ -8,6 +8,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import ProfileSetup from './pages/ProfileSetup';
 
+import Profile from './pages/Profile';
+
 function App() {
   return (
     <AuthProvider>
@@ -16,7 +18,19 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/profile-setup" element={<ProfileSetup />} />
 
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+
           <Route path="/student" element={
+            <ProtectedRoute role="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/scan" element={
             <ProtectedRoute role="student">
               <StudentDashboard />
             </ProtectedRoute>

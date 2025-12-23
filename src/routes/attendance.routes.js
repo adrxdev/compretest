@@ -3,5 +3,6 @@ const router = express.Router();
 const attendanceController = require('../controllers/attendance.controller');
 
 router.post('/', attendanceController.logAttendance);
+router.get('/my-history', attendanceController.getMyHistory);
 
 module.exports = router;

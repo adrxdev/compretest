@@ -9,11 +9,13 @@ export default function Login() {
     const [otp, setOtp] = useState('');
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleRequestOtp = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             const res = await api.post('/auth/request-otp', { email });
             // For Dev: pre-fill OTP if returned
@@ -25,11 +27,14 @@ export default function Login() {
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to send OTP');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             const res = await api.post('/auth/verify-otp', { email, otp });
             const token = res.data.token;
@@ -42,10 +47,11 @@ export default function Login() {
             } else if (!decoded.enrollment_no) {
                 navigate('/profile-setup');
             } else {
-                navigate('/dashboard');
+                navigate('/student');
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Invalid OTP');
+            setIsLoading(false); // Only stop loading on error, success unmounts
         }
     };
 
@@ -78,7 +84,9 @@ export default function Login() {
                                     onChange={e => setEmail(e.target.value)}
                                 />
                             </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%' }}>Send Verification Code</button>
+                            <button type="submit" className="mit-btn" style={{ width: '100%' }} disabled={isLoading}>
+                                {isLoading ? 'Sending...' : 'Send Verification Code'}
+                            </button>
                         </form>
                     ) : (
                         <form onSubmit={handleVerifyOtp}>
@@ -91,9 +99,12 @@ export default function Login() {
                                     placeholder="123456"
                                     value={otp}
                                     onChange={e => setOtp(e.target.value)}
+                                    disabled={isLoading}
                                 />
                             </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%' }}>Verify & Login</button>
+                            <button type="submit" className="mit-btn" style={{ width: '100%' }} disabled={isLoading}>
+                                {isLoading ? 'Verifying...' : 'Verify & Login'}
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => setStep(1)}

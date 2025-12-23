@@ -1,29 +1,39 @@
 const userModel = require('../models/user.model');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const db = require('../config/db');
 
-const create = async (req, res) => {
-    try {
-        const user = await userModel.createUser(req.body);
-        res.status(201).json(user);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error', details: error.message });
-    }
-};
+const jwt = require('jsonwebtoken');
 
 const updateProfile = async (req, res) => {
-    const { name, enrollment_no, branch } = req.body;
-    const userId = req.user.id;
-
-    if (!name || !enrollment_no || !branch) {
-        return res.status(400).json({ error: 'All fields (name, enrollment_no, branch) are required' });
-    }
-
     try {
-        const updatedUser = await userModel.updateUser(userId, { name, enrollment_no, branch });
+        const userId = req.user.id;
+        const { name, enrollment_no } = req.body;
 
-        // Generate new token with updated info
+        // Validation: Enrollment is required only for students
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+        if (req.user.role !== 'admin' && !enrollment_no) {
+            return res.status(400).json({ error: 'Enrollment Number is required' });
+        }
+
+        // Check enrollment conflict (if changed)
+        // Simple check: is enr used by another user?
+        const conflictQuery = 'SELECT id FROM users WHERE enrollment_no = $1 AND id != $2';
+        const conflict = await db.query(conflictQuery, [enrollment_no, userId]);
+        if (conflict.rows.length > 0) {
+            return res.status(409).json({ error: 'Enrollment number already in use' });
+        }
+
+        const updateQuery = `
+            UPDATE users 
+            SET name = $1, enrollment_no = $2
+            WHERE id = $3
+            RETURNING id, name, email, enrollment_no, role
+        `;
+        const { rows } = await db.query(updateQuery, [name, enrollment_no, userId]);
+        const updatedUser = rows[0];
+
+        // Generate NEW Token with updated info
         const token = jwt.sign(
             {
                 id: updatedUser.id,
@@ -36,25 +46,28 @@ const updateProfile = async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        res.json({ message: 'Profile updated', user: updatedUser, token });
+        res.json({ message: 'Profile updated successfully', user: updatedUser, token });
+
     } catch (error) {
-        console.error("Profile Update Error:", error);
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
 
-        // Handle Unique Constraint Violation (e.g., Enrollment No already exists)
-        if (error.code === '23505') {
-            return res.status(409).json({ error: 'Enrollment number already in use by another student.' });
-        }
+const getProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await userModel.findById(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Handle Not Null Violation
-        if (error.code === '23502') {
-            return res.status(400).json({ error: 'Missing required fields in database.' });
-        }
-
+        // Don't return sensitive info if any
+        res.json(user);
+    } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
 module.exports = {
-    create,
     updateProfile,
+    getProfile
 };

@@ -10,5 +10,15 @@ router.get('/:id/current-qr', eventController.getCurrentQr);
 router.get('/:id/stats', eventController.getStats);
 router.get('/:id/export', eventController.exportCsv);
 router.get('/:id/recent-attendance', eventController.getRecentAttendance);
+router.get('/:id/audit-alerts', eventController.getAuditAlerts);
+
+router.post('/:id/open-entry', eventController.openEntry);
+router.post('/:id/open-exit', eventController.openExit);
+router.post('/:id/close-attendance', eventController.closeAttendance);
+
+router.post('/:id/start-session', eventController.startSession);
+router.post('/:id/pause-session', eventController.pauseSession);
+router.post('/:id/stop-session', eventController.stopSession);
+
 
 module.exports = router;
