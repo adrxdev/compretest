@@ -29,7 +29,13 @@ const resumeActiveSessions = async () => {
         if (activeEvents.length === 0) console.log("✅ No active sessions found.");
 
     } catch (err) {
-        console.error("❌ Failed to resume sessions:", err);
+        // Check if error is due to missing tables (fresh database)
+        if (err.message && err.message.includes('relation') && err.message.includes('does not exist')) {
+            console.log("⚠️  Database tables not yet created.");
+            console.log("ℹ️  Run 'node scripts/setup-db.js' to initialize the database schema.");
+        } else {
+            console.error("❌ Failed to resume sessions:", err.message);
+        }
     }
 };
 
