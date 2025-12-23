@@ -85,9 +85,14 @@ const getMyHistory = async (req, res) => {
     try {
         const user_id = req.user.id;
         const history = await attendanceModel.findByUser(user_id);
-        res.status(200).json(history);
+
+        // Ensure we always return an array, even if empty
+        res.status(200).json({
+            history: history || [],
+            count: history ? history.length : 0
+        });
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching attendance history:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };

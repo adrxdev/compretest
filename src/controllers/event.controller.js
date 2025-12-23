@@ -7,10 +7,30 @@ const attendanceModel = require('../models/attendance.model');
 
 const create = async (req, res) => {
     try {
-        const event = await eventModel.createEvent(req.body);
+        // 1. Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Only admins can create events' });
+        }
+
+        // 2. Validate required fields
+        const { name, venue, start_time, end_time } = req.body;
+        if (!name || !start_time || !end_time) {
+            return res.status(400).json({
+                error: 'Missing required fields',
+                required: ['name', 'start_time', 'end_time']
+            });
+        }
+
+        // 3. Create event with user ID
+        const eventData = {
+            ...req.body,
+            created_by: req.user.id
+        };
+
+        const event = await eventModel.createEvent(eventData);
         res.status(201).json(event);
     } catch (error) {
-        console.error(error);
+        console.error('Error creating event:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 };
