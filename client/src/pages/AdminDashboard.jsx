@@ -48,6 +48,13 @@ export default function AdminDashboard() {
             return;
         }
 
+
+        console.log("🔍 FRONTEND: Creating event with payload:", {
+            name: newEventName,
+            venue: venue || 'TBD',
+            qr_refresh_interval: interval
+        });
+
         try {
             await api.post('/events', {
                 name: newEventName,
@@ -61,6 +68,9 @@ export default function AdminDashboard() {
             setMessage('Event created successfully');
             fetchEvents();
         } catch (err) {
+            console.error("❌ FRONTEND: CREATE EVENT ERROR", err);
+            console.error("❌ Response:", err.response?.data);
+            console.error("❌ Status:", err.response?.status);
             setMessage(err.response?.data?.error || 'Failed to create event');
         }
     };
