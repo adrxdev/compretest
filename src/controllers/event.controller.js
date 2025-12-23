@@ -21,9 +21,13 @@ const create = async (req, res) => {
             });
         }
 
-        // 3. Create event with user ID
+        // 4. Create event with auto-generated times
         const eventData = {
-            ...req.body,
+            name,
+            venue: req.body.venue || 'TBD',
+            start_time: now.toISOString(),
+            end_time: oneHourLater.toISOString(),
+            qr_refresh_interval: req.body.qr_refresh_interval || 10,
             created_by: req.user.id
         };
 
