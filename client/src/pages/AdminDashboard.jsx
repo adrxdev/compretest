@@ -43,8 +43,8 @@ export default function AdminDashboard() {
         e.preventDefault();
 
         // Validate required fields
-        if (!newEventName || !startTime || !endTime) {
-            setMessage('Please fill all required fields');
+        if (!newEventName) {
+            setMessage('Please enter event name');
             return;
         }
 
@@ -52,15 +52,11 @@ export default function AdminDashboard() {
             await api.post('/events', {
                 name: newEventName,
                 venue: venue || 'TBD',
-                start_time: startTime,
-                end_time: endTime,
                 qr_refresh_interval: interval
             });
             // Reset form
             setNewEventName('');
             setVenue('');
-            setStartTime('');
-            setEndTime('');
             setInterval(10);
             setMessage('Event created successfully');
             fetchEvents();
