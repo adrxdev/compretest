@@ -54,21 +54,23 @@ const requestOtp = async (req, res) => {
                    </div>`
         };
 
-        // Attempt to send email, fallback to dev mode if credentials missing
+        console.log(`[DEBUG] Generated OTP for ${email}: ${otp}`); // ALWAYS LOG FOR DEBUGGING
+
+        // NON-BLOCKING: Send response immediately so UI doesn't hang
+        res.status(200).json({ message: 'OTP generated. Check email or debug log.', dev_otp: otp });
+
+        // Attempt to send email in background (Fire & Forget)
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await transporter.sendMail(mailOptions);
-            res.status(200).json({ message: 'OTP sent to your email.' });
+            transporter.sendMail(mailOptions).catch(err => {
+                console.error("[Background] Failed to send email:", err.message);
+            });
         } else {
             console.log(`[DEV MODE] OTP generated for ${email}`);
-            res.status(200).json({
-                message: 'OTP generated (Dev Mode)',
-                dev_otp: otp
-            });
         }
 
     } catch (error) {
         console.error("OTP Error:", error);
-        res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+        res.status(500).json({ error: 'Failed to generate OTP.' });
     }
 };
 

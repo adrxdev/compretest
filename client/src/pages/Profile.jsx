@@ -10,20 +10,21 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
     const fetchProfile = async () => {
         try {
             const res = await api.get('/users/profile');
             setUser(res.data);
             setLoading(false);
-        } catch (err) {
+        } catch {
             setError('Failed to fetch profile');
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line
+        fetchProfile();
+    }, []);
 
     const { login } = useAuth(); // Import login from context
 

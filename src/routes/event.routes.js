@@ -9,6 +9,7 @@ router.post('/:id/stop-qr', eventController.stopQr);
 router.get('/:id/current-qr', eventController.getCurrentQr);
 router.get('/:id/stats', eventController.getStats);
 router.get('/:id/export', eventController.exportCsv);
+router.get('/:id/export-pdf', eventController.exportPdf);
 router.get('/:id/recent-attendance', eventController.getRecentAttendance);
 router.get('/:id/audit-alerts', eventController.getAuditAlerts);
 

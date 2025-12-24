@@ -132,6 +132,8 @@ const getAuditAlerts = async (req, res) => {
     }
 };
 
+const PDFDocument = require('pdfkit');
+
 const exportCsv = async (req, res) => {
     try {
         const { id } = req.params;
@@ -146,6 +148,64 @@ const exportCsv = async (req, res) => {
         res.header('Content-Type', 'text/csv');
         res.attachment(`attendance-event-${id}.csv`);
         res.send(csvContent);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const exportPdf = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await eventModel.findById(id);
+        const records = await attendanceModel.exportByEvent(id);
+
+        const doc = new PDFDocument();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=attendance-event-${id}.pdf`);
+
+        doc.pipe(res);
+
+        // Header
+        doc.fontSize(20).text('AttendEase Attendance Report', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(14).text(`Event: ${event.name}`, { align: 'left' });
+        doc.text(`Venue: ${event.venue || 'N/A'}`, { align: 'left' });
+        doc.text(`Date: ${new Date(event.created_at).toLocaleDateString()}`, { align: 'left' });
+        doc.moveDown();
+
+        // Table Header
+        const tableTop = 200;
+        const nameX = 50;
+        const emailX = 200;
+        const timeX = 400;
+        const statusX = 500;
+
+        doc.fontSize(10).font('Helvetica-Bold');
+        doc.text('Name', nameX, tableTop);
+        doc.text('Email', emailX, tableTop);
+        doc.text('Time', timeX, tableTop);
+        doc.text('Status', statusX, tableTop);
+
+        doc.moveTo(nameX, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+        let y = tableTop + 25;
+        doc.font('Helvetica');
+
+        records.forEach(r => {
+            if (y > 700) {
+                doc.addPage();
+                y = 50;
+            }
+            doc.text(r.name, nameX, y);
+            doc.text(r.email, emailX, y, { width: 190, ellipsis: true });
+            doc.text(new Date(r.scan_time).toLocaleTimeString(), timeX, y);
+            doc.text(r.status, statusX, y);
+            y += 20;
+        });
+
+        doc.end();
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -208,6 +268,7 @@ module.exports = {
     getCurrentQr,
     getStats,
     exportCsv,
+    exportPdf,
     getRecentAttendance,
     getAuditAlerts,
     openEntry,

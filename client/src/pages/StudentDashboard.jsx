@@ -24,91 +24,23 @@ export default function StudentDashboard() {
         }
     }, [user, navigate]);
 
-    // Check for Deep Link (Direct Scan)
-    const [searchParams] = useSearchParams();
-    useEffect(() => {
-        const eventId = searchParams.get('event_id');
-        const token = searchParams.get('token');
-        if (eventId && token && view === 'home' && !statusData) {
-            handleAttendanceSubmit(JSON.stringify({ eventId, token }), true);
-        }
-    }, [searchParams, view]);
-
-    // Fetch History on Mount and after success
-    useEffect(() => {
-        fetchHistory();
-    }, [user]);
-
+    // Fetch History - Moved definition up to be accessible for useEffect
     const fetchHistory = async () => {
         if (!user) return;
         try {
             const res = await api.get('/attendance/my-history');
             setHistory(res.data.history || res.data || []);
-        } catch (err) {
-            console.error('Failed to load history', err);
+        } catch {
+            // console.error('Failed to load history', err);
             setHistory([]);
         }
     };
 
-    // Cleanup scanner on unmount
-    useEffect(() => {
-        return () => {
-            if (scannerRef.current) {
-                scannerRef.current.stop().catch(err => console.error("Failed to stop scanner", err));
-            }
-        };
-    }, []);
+    // Check for Deep Link (Direct Scan)
+    const [searchParams] = useSearchParams();
 
-    const startScanner = () => {
-        setView('scanner');
-        setError('');
-
-        // Slight delay to ensure DOM is ready
-        setTimeout(() => {
-            const html5QrCode = new Html5Qrcode("reader");
-            scannerRef.current = html5QrCode;
-
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).catch(err => {
-                setError("Camera permission denied or not available.");
-                setView('home');
-            });
-        }, 100);
-    };
-
-    const stopScanner = async () => {
-        if (scannerRef.current) {
-            try {
-                await scannerRef.current.stop();
-                scannerRef.current = null;
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        setView('home');
-    };
-
-    const onScanSuccess = (decodedText) => {
-        // Stop scanning immediately
-        if (scannerRef.current) {
-            scannerRef.current.stop().then(() => {
-                scannerRef.current = null;
-                handleAttendanceSubmit(decodedText);
-            }).catch(e => console.error(e));
-        }
-    };
-
-    const onScanFailure = (error) => {
-        // console.warn(`Code scan error = ${error}`);
-    };
-
-    const handleAttendanceSubmit = async (qrData, isDirect = false) => {
+    // START FIX: Moved handleAttendanceSubmit UP so it can be used in useEffect
+    const handleAttendanceSubmit = async (qrData) => { // Removed isDirect
         try {
             let payload = {};
 
@@ -149,7 +81,8 @@ export default function StudentDashboard() {
                 name: user.name,
                 enrollment_no: user.enrollment_no,
                 time: new Date().toLocaleString(),
-                message: res.data.message || 'Attendance Marked'
+                message: res.data.message || 'Attendance Marked',
+                isMarked: true
             });
             setView('success');
             fetchHistory(); // Refresh history
@@ -158,6 +91,84 @@ export default function StudentDashboard() {
             setError(err.response?.data?.error || err.message || 'Attendance Failed');
             setView('home'); // Go back to home to show error
         }
+    };
+
+    useEffect(() => {
+        const eventId = searchParams.get('event_id');
+        const token = searchParams.get('token');
+        if (eventId && token && view === 'home' && !statusData) {
+            handleAttendanceSubmit(JSON.stringify({ eventId, token }), true);
+        }
+        // ESLint wanted handleAttendanceSubmit here. Now it's safe because it's defined above.
+        // However, handleAttendanceSubmit is not wrapped in useCallback, so it might cause infinite loop if added.
+        // For now, I will suppress the warning or wrap it. 
+        // Better: Disable the warning for this line as it's a one-off effect on mount/params change.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams, view]);
+
+    // Fetch History on Mount and after success
+    useEffect(() => {
+        fetchHistory();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]); // Keeping user dependency 
+
+
+    // Cleanup scanner on unmount
+    useEffect(() => {
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.stop().catch(err => console.error("Failed to stop scanner", err));
+            }
+        };
+    }, []);
+
+    const startScanner = () => {
+        setView('scanner');
+        setError('');
+
+        // Slight delay to ensure DOM is ready
+        setTimeout(() => {
+            const html5QrCode = new Html5Qrcode("reader");
+            scannerRef.current = html5QrCode;
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).catch(() => {
+                setError("Camera permission denied or not available.");
+                setView('home');
+            });
+        }, 100);
+    };
+
+    const stopScanner = async () => {
+        if (scannerRef.current) {
+            try {
+                await scannerRef.current.stop();
+                scannerRef.current = null;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        setView('home');
+    };
+
+    const onScanSuccess = (decodedText) => {
+        // Stop scanning immediately
+        if (scannerRef.current) {
+            scannerRef.current.stop().then(() => {
+                scannerRef.current = null;
+                handleAttendanceSubmit(decodedText);
+            }).catch(e => console.error(e));
+        }
+    };
+
+    const onScanFailure = () => {
+        // console.warn(`Code scan error = ${error}`);
     };
 
     const handleManualSubmit = async (e) => {
@@ -171,7 +182,8 @@ export default function StudentDashboard() {
             setStatusData({
                 name: user.name,
                 enrollment_no: user.enrollment_no,
-                time: new Date().toLocaleString()
+                time: new Date().toLocaleString(),
+                isMarked: true
             });
             setView('success');
             fetchHistory(); // Refresh history

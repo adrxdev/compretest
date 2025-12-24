@@ -128,6 +128,21 @@ export default function AdminDashboard() {
         }
     };
 
+    const downloadPdf = async (id) => {
+        try {
+            const response = await api.get(`/events/${id}/export-pdf`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `attendance_${id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+        } catch (error) {
+            console.error('Export PDF failed');
+            setMessage('Failed to export PDF');
+        }
+    };
+
     return (
         <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-grey)' }}>
             {/* Header */}
@@ -330,7 +345,14 @@ export default function AdminDashboard() {
                                                 className="mit-btn"
                                                 style={{ fontSize: '0.9rem', padding: '0.5rem 1rem', background: 'white', color: 'var(--mit-purple)', border: '1px solid var(--mit-purple)', marginRight: '10px' }}
                                             >
-                                                Export CSV
+                                                CSV
+                                            </button>
+                                            <button
+                                                onClick={() => downloadPdf(event.id)}
+                                                className="mit-btn"
+                                                style={{ fontSize: '0.9rem', padding: '0.5rem 1rem', background: 'white', color: '#d32f2f', border: '1px solid #d32f2f' }}
+                                            >
+                                                PDF
                                             </button>
                                         </td>
                                         <td style={{ padding: '1rem' }}>
