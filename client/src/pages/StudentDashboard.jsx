@@ -119,14 +119,30 @@ export default function StudentDashboard() {
         try {
             if (navigator.vibrate) navigator.vibrate(200);
 
-            const parts = qrData.split(':');
-            // Fixed: Should be OR (||) not AND (&&)
-            if (parts[0] !== 'EVENT' || !parts[1] || !parts[2]) {
-                throw new Error("Invalid QR Code format. Please scan a valid attendance QR code.");
+            let eventId, token;
+
+            // 1. Check if it's a URL (Deep Link format)
+            if (qrData.startsWith('http')) {
+                try {
+                    const url = new URL(qrData);
+                    eventId = url.searchParams.get('event_id');
+                    token = url.searchParams.get('token');
+                } catch (e) {
+                    throw new Error("Invalid QR URL format.");
+                }
+            }
+            // 2. Check legacy format (EVENT:ID:TOKEN)
+            else if (qrData.startsWith('EVENT')) {
+                const parts = qrData.split(':');
+                if (parts.length === 3) {
+                    eventId = parts[1];
+                    token = parts[2];
+                }
             }
 
-            const eventId = parts[1];
-            const token = parts[2];
+            if (!eventId || !token) {
+                throw new Error("Invalid QR Code format. Please scan a valid attendance QR code.");
+            }
 
             await api.post('/attendance', { event_id: eventId, token });
 
