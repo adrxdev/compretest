@@ -114,15 +114,18 @@ const verifyOtp = async (req, res) => {
 
         // Find or Create User
         // Note: Ideally move this to userModel
+        console.log('[OTP Verify] Finding user for email:', email);
         let userQuery = 'SELECT * FROM users WHERE email = $1';
         let { rows } = await db.query(userQuery, [email]);
         let user = rows[0];
+        console.log('[OTP Verify] User found:', !!user);
 
         if (!user) {
             // Create new user
             // STRICT ADMIN: Only specific email gets admin access
             const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
             const role = email === ADMIN_EMAIL ? 'admin' : 'student';
+            console.log('[OTP Verify] Creating new user with role:', role);
 
             const insertQuery = `
         INSERT INTO users (name, email, role, user_status)
@@ -131,15 +134,18 @@ const verifyOtp = async (req, res) => {
       `;
             const result = await db.query(insertQuery, ['New User', email, role]);
             user = result.rows[0];
+            console.log('[OTP Verify] New user created:', user.id);
         } else {
             // CHECK STATUS FOR EXISTING USERS
             if (user.user_status === 'disabled') {
+                console.log('[OTP Verify] User is disabled');
                 return res.status(403).json({ error: 'Account disabled. Contact Admin.' });
             }
 
             // FOR EXISTING USERS: Check if they should be admin
             const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
             if (email === ADMIN_EMAIL && user.role !== 'admin') {
+                console.log('[OTP Verify] Upgrading user to admin');
                 const updateQuery = 'UPDATE users SET role = $1 WHERE id = $2 RETURNING *';
                 const updateResult = await db.query(updateQuery, ['admin', user.id]);
                 user = updateResult.rows[0];
@@ -148,6 +154,7 @@ const verifyOtp = async (req, res) => {
 
         // Issue JWT
         // Issue JWT with FULL profile data
+        console.log('[OTP Verify] Issuing JWT for user:', user.id);
         const token = jwt.sign(
             {
                 id: user.id,
@@ -160,9 +167,11 @@ const verifyOtp = async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        console.log('[OTP Verify] Login successful');
         res.status(200).json({ message: 'Login successful', token, user });
     } catch (error) {
-        console.error(error);
+        console.error('[OTP Verify] Error:', error);
+        console.error('[OTP Verify] Error stack:', error.stack);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
