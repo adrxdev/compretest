@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import AddCandidateModal from '../../components/admin/AddCandidateModal';
+import AdminLayout from '../../components/admin/AdminLayout';
+import { ArrowLeft, Clock, Calendar, Users, Briefcase, Trash2, Plus } from 'lucide-react';
 
 export default function AdminAssessmentDetails() {
     const { id } = useParams();
@@ -42,111 +44,186 @@ export default function AdminAssessmentDetails() {
         alert("Candidates added successfully!");
     };
 
+    // Helper to format ISO time (2025-12-25T10:00:00) to "10:00 AM"
+    const formatTime = (isoString) => {
+        if (!isoString) return '--:--';
+        return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
 
+    if (loading) return (
+        <AdminLayout title="Assessment Details">
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Loading details...</div>
+        </AdminLayout>
+    );
 
-    if (loading) return <div className="mit-container">Loading...</div>;
-    if (!assessment) return <div className="mit-container">Assessment not found</div>;
+    if (!assessment) return (
+        <AdminLayout title="Not Found">
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>Assessment not found</div>
+        </AdminLayout>
+    );
+
+    const headerActions = (
+        <Link to="/admin/assessments" style={{ textDecoration: 'none' }}>
+            <button style={{
+                background: 'white', border: '1px solid #e2e8f0', color: '#64748b',
+                padding: '0.6rem 1.2rem', borderRadius: '10px', fontWeight: '600',
+                display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer'
+            }}>
+                <ArrowLeft size={16} /> Back
+            </button>
+        </Link>
+    );
 
     return (
-        <div className="mit-container" style={{ maxWidth: '100%', padding: '1rem' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
-                <Link to="/admin/assessments" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'inline-block', marginBottom: '1rem' }}>
-                    &larr; Back to Assessments
-                </Link>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <div>
-                        <h1 style={{ fontSize: '1.75rem', margin: '0 0 0.5rem 0' }}>{assessment.title}</h1>
+        <AdminLayout title={assessment.title} actions={headerActions}>
+            <div style={{ maxWidth: '100%' }}>
+
+                {/* 1. Overview Section */}
+                <div style={{
+                    display: 'flex', gap: '2rem', marginBottom: '2.5rem',
+                    paddingBottom: '2rem', borderBottom: '1px solid #f1f5f9',
+                    alignItems: 'center'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#f8fafc', padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                         <span style={{
-                            background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', color: '#475569'
+                            background: assessment.status === 'PUBLISHED' ? '#dcfce7' : '#e2e8f0',
+                            color: assessment.status === 'PUBLISHED' ? '#15803d' : '#475569',
+                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.05em'
                         }}>
-                            {assessment.status}
+                            {assessment.status || 'DRAFT'}
                         </span>
-                        <div style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-                            📅 {new Date(assessment.date).toLocaleDateString()} &nbsp;|&nbsp; ⏰ {assessment.start_time.slice(0, 5)} - {assessment.end_time.slice(0, 5)}
+                        <div style={{ height: '20px', width: '1px', background: '#cbd5e1' }}></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', fontSize: '0.9rem', fontWeight: '500' }}>
+                            <Calendar size={16} color="#64748b" /> {new Date(assessment.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', fontSize: '0.9rem', fontWeight: '500', marginLeft: '0.5rem' }}>
+                            <Clock size={16} color="#64748b" /> {formatTime(assessment.start_time)} - {formatTime(assessment.end_time)}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '2rem' }}>
+                {/* 2. Content Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '7fr 3fr', gap: '2.5rem' }}>
 
-                {/* Left: Eligible Candidates */}
-                <div className="mit-card" style={{ padding: 0, overflow: 'hidden' }}>
-                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ margin: 0 }}>Eligible Candidates ({candidates.length})</h3>
-                        <button onClick={() => setShowModal(true)} className="mit-btn" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
-                            + Add Candidates
-                        </button>
-                    </div>
-
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ background: 'var(--bg-primary)', fontSize: '0.9rem' }}>
-                            <tr>
-                                <th style={{ padding: '1rem' }}>Enrollment</th>
-                                <th style={{ padding: '1rem' }}>Name</th>
-                                <th style={{ padding: '1rem' }}>Branch</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {candidates.length === 0 ? (
-                                <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No candidates shortlisted yet.</td></tr>
-                            ) : (
-                                candidates.map(c => (
-                                    <tr key={c.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <td style={{ padding: '1rem', fontFamily: 'monospace' }}>{c.enrollment_no || '-'}</td>
-                                        <td style={{ padding: '1rem', fontWeight: '500' }}>{c.name}</td>
-                                        <td style={{ padding: '1rem' }}>{c.branch || '-'} <small>({c.academic_year === 4 ? 'Final' : '3rd'} Yr)</small></td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <button
-                                                onClick={() => handleRemoveCandidate(c.id)}
-                                                style={{ border: 'none', background: 'none', color: '#dc3545', cursor: 'pointer' }}
-                                            >
-                                                Remove
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Right: Info / Placeholder for Seat Allocation */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div className="mit-card" style={{ padding: '1.5rem' }}>
-                        <h4 style={{ margin: '0 0 1rem 0' }}>Description</h4>
-                        <p style={{ color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                            {assessment.description || 'No description provided.'}
-                        </p>
-                    </div>
-
-                    <div className="mit-card" style={{ padding: '1.5rem', opacity: 1 }}>
-                        <h4 style={{ margin: '0 0 0.5rem 0' }}>Seat Allocation</h4>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                            {assessment.status === 'ALLOCATED'
-                                ? 'Seats have been allocated for this assessment.'
-                                : 'Allocate labs and seats to eligible candidates.'}
-                        </p>
-                        <Link to={`/admin/allocations/${id}`}>
-                            <button className="mit-btn" style={{ width: '100%', justifyContent: 'center' }}>
-                                {assessment.status === 'ALLOCATED' ? 'View Allocations' : 'Manage Allocations'}
+                    {/* Left Column: Candidates list */}
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Users size={20} color="#6366f1" /> Eligible Students
+                                <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>
+                                    {candidates.length}
+                                </span>
+                            </h3>
+                            <button
+                                onClick={() => setShowModal(true)}
+                                style={{
+                                    background: '#4f46e5', color: 'white', border: 'none',
+                                    padding: '0.6rem 1.2rem', borderRadius: '10px', fontWeight: '600', fontSize: '0.85rem',
+                                    display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                                    boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+                                }}
+                            >
+                                <Plus size={16} /> Add Students
                             </button>
-                        </Link>
+                        </div>
+
+                        <div style={{
+                            background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0',
+                            overflow: 'hidden', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+                        }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                    <tr>
+                                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Enrollment</th>
+                                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Name</th>
+                                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Branch</th>
+                                        <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {candidates.length === 0 ? (
+                                        <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No eligible students added yet.</td></tr>
+                                    ) : (
+                                        candidates.map(c => (
+                                            <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
+                                                <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#334155', fontWeight: '500' }}>{c.enrollment_no || '-'}</td>
+                                                <td style={{ padding: '1rem', fontWeight: '600', color: '#0f172a' }}>{c.name}</td>
+                                                <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.9rem' }}>{c.branch || '-'} <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>({c.academic_year === 4 ? 'BE' : 'TE'})</span></td>
+                                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                    <button
+                                                        onClick={() => handleRemoveCandidate(c.id)}
+                                                        title="Remove student"
+                                                        style={{
+                                                            border: 'none', background: '#fef2f2', color: '#ef4444',
+                                                            cursor: 'pointer', padding: '6px', borderRadius: '6px'
+                                                        }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Actions & Meta */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                        {/* Description Card */}
+                        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: '700', color: '#334155' }}>Instructions</h4>
+                            <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: '#64748b' }}>
+                                {assessment.description || 'No specific instructions provided for this assessment.'}
+                            </p>
+                        </div>
+
+                        {/* Allocation Action Card */}
+                        <div style={{
+                            background: 'white', padding: '1.5rem', borderRadius: '16px',
+                            border: '2px solid #e0e7ff', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
+                                <div style={{ background: '#e0e7ff', padding: '8px', borderRadius: '8px', color: '#4338ca' }}><Briefcase size={20} /></div>
+                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: '#1e293b' }}>Seat Allocation</h4>
+                            </div>
+
+                            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.9rem', color: '#64748b', lineHeight: '1.5' }}>
+                                {assessment.status === 'ALLOCATED'
+                                    ? '✅ Allocation complete. View seating.'
+                                    : 'Auto-assign labs and seats to students.'}
+                            </p>
+
+                            <Link to={`/admin/allocations/${id}`}>
+                                <button style={{
+                                    width: '100%',
+                                    background: assessment.status === 'ALLOCATED' ? 'white' : '#4f46e5',
+                                    color: assessment.status === 'ALLOCATED' ? '#4f46e5' : 'white',
+                                    border: assessment.status === 'ALLOCATED' ? '1px solid #4f46e5' : 'none',
+                                    padding: '0.75rem', borderRadius: '10px', fontWeight: '600',
+                                    cursor: 'pointer', fontSize: '0.9rem',
+                                    display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
+                                    transition: 'all 0.2s'
+                                }}>
+                                    {assessment.status === 'ALLOCATED' ? 'View Seating Plan' : 'Start Allocation'}
+                                </button>
+                            </Link>
+                        </div>
+
                     </div>
                 </div>
-            </div>
 
-            {/* Add Candidates Modal */}
-            {showModal && (
-                <AddCandidateModal
-                    assessmentId={id}
-                    onClose={() => setShowModal(false)}
-                    onSuccess={handleSuccess}
-                />
-            )}
-        </div>
+                {/* Add Candidates Modal */}
+                {showModal && (
+                    <AddCandidateModal
+                        assessmentId={id}
+                        onClose={() => setShowModal(false)}
+                        onSuccess={handleSuccess}
+                    />
+                )}
+            </div>
+        </AdminLayout>
     );
 }
