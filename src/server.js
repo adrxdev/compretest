@@ -40,6 +40,27 @@ const resumeActiveSessions = async () => {
     }
 };
 
+
+// EMERGENCY MIGRATION ROUTE
+// TODO: Remove after fixing production DB
+const { createMissingTables } = require('../scripts/create_missing_tables');
+app.get('/api/migrate/emergency', async (req, res) => {
+    try {
+        console.log('🚨 Triggering emergency migration...');
+        await createMissingTables();
+        res.status(200).json({
+            success: true,
+            message: 'Database migration completed successfully! All missing tables created.'
+        });
+    } catch (error) {
+        console.error('Migration failed:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 const server = app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
 

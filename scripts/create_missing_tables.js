@@ -81,4 +81,10 @@ async function createMissingTables() {
     }
 }
 
-createMissingTables();
+
+// If executed directly
+if (require.main === module) {
+    createMissingTables();
+}
+
+module.exports = { createMissingTables };
