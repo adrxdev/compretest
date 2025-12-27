@@ -1,200 +1,143 @@
 # Smart Attendance & Placement Portal
 
-A comprehensive institutional system for managing attendance tracking and placement assessments with QR-based authentication and automated seat allocation.
+A comprehensive digital solution for university placement cells to manage attendance, assessments, and seat allocations efficiently.
 
-## 🚀 Features
+## Problem Statement
 
-### Attendance Management
-- **QR Code Scanning**: Dynamic QR codes with automatic rotation for secure attendance
-- **Manual Entry**: Backup code entry system for reliability
-- **Real-time Tracking**: Live attendance monitoring with session controls
-- **Duplicate Prevention**: Database-level and application-level duplicate checks
-- **Device Fingerprinting**: Anti-proxy measures for attendance integrity
+University placement processes often suffer from significant inefficiencies:
+*   **Manual Attendance**: Passing physical sheets is time-consuming and prone to loss.
+*   **Proxy Attendance**: Students signing for absent peers compromises data integrity.
+*   **Poor Visibility**: Administrators lack real-time data on student participation.
+*   **Manual Shortlisting**: Filtering eligible students for drives is tedious and error-prone.
+*   **Allocation Chaos**: Manually assigning labs and seats for assessments is logistically complex.
 
-### Assessment & Placement
-- **Student Shortlisting**: Flexible candidate selection for assessments
-- **Automated Seat Allocation**: Intelligent lab and seat assignment
-- **Conflict Detection**: Prevents double-booking and capacity violations
-- **Student Portal**: View allocated seats and assessment details
+## Solution Overview
 
-### Admin Dashboard
-- **Session Management**: Create, control (pause/resume/stop), and monitor events
-- **User Management**: Manage students and administrators
-- **Lab Configuration**: Define labs with capacity constraints
-- **Reports & Analytics**: Attendance reports and event statistics
+This portal digitizes the entire placement workflow. It enables administrators to create live sessions, projects dynamic QR codes for secure attendance, and manages the end-to-end flow of assessments from eligibility to seat allocation. Designed for scalability, it handles high-concurrency scans and provides role-based dashboards for clear visibility.
 
-## 🛠️ Tech Stack
+## Key Features
 
-### Frontend
-- **React** with Vite
-- **React Router** for navigation
-- **Axios** for API communication
-- **html5-qrcode** for QR scanning
-- **Lucide React** for icons
+### Admin Features
+*   **Session Management**: Create, start, pause, and stop attendance events.
+*   **Real-time Monitoring**: View live attendance counts and student lists as they scan.
+*   **Assessment Control**: Create assessments, manage eligibility, and upload candidate lists via CSV.
+*   **Automated Allocation**: One-click shuffling and seat allocation for lab exams to prevent dishonesty.
+*   **Data Export**: Download attendance and allocation reports in CSV/PDF formats.
 
-### Backend
-- **Node.js** with Express
-- **PostgreSQL** for data persistence
-- **JWT** for authentication
-- **bcrypt** for password hashing
+### Student Features
+*   **Secure Dashboard**: View profile status and upcoming drives.
+*   **QR Scanner**: Integrated scanner with deep-linking support for quick attendance marking.
+*   **History & Logs**: Access personal attendance history and verify participation.
+*   **Seat Allocation**: View assigned lab and seat number immediately upon allocation.
 
-## 📦 Installation
+### Projector View Features
+*   **Dynamic QR Code**: Rotating logic (every 10s) to prevent static photo-based proxy attendance.
+*   **Live Counter**: Displays total present count in real-time to motivate punctuality.
+*   **Status Indicators**: Visual cues for session state (Active/Paused/Stopped).
+
+## System Architecture
+
+The application checks for robustness and integrity using a monolithic architecture with separated concerns:
+
+*   **Frontend**: React.js (Vite) for a responsive and interactive user interface.
+*   **Backend**: Node.js with Express.js REST API for business logic.
+*   **Database**: PostgreSQL for relational data integrity (User, Events, Attendance, Assessments).
+*   **Deployment**: 
+    *   Frontend hosted on **Vercel** for global edge delivery.
+    *   Backend and Database hosted on **Railway** for reliable containerization and managed SQL.
+
+## Authentication & Authorization
+
+*   **OTP-Based Login**: Passwordless entry using email and one-time passwords via Nodemailer.
+*   **Session Security**: JWT (JSON Web Tokens) used for stateless authentication.
+*   **Role-Based Access Control (RBAC)**: Strict separation between `admin` and `student` routes. Middleware verifies roles before granting access to sensitive endpoints.
+
+## Attendance Workflow
+
+1.  **Creation**: Admin creates an event (e.g., "TCS Pre-placement Talk").
+2.  **Projection**: Admin launches the "Projector View". A unique, rotating QR code appears.
+3.  **Scanning**: Students scan the code using the portal's built-in scanner.
+4.  **Verification**: The backend validates the token, user location (optional), and prevents duplicate entries.
+5.  **Confirmation**: Success message appears on the student's device; Admin counter increments instantly.
+
+## Assessment & Allocation Workflow
+
+1.  **Setup**: Admin defines an assessment (e.g., "Coding Round 1").
+2.  **Shortlisting**: Admin uploads a CSV of eligible enrollment numbers.
+3.  **Lab Setup**: Admin defines available labs and capacity (e.g., "Lab A: 60 seats").
+4.  **Allocation**: The system randomly assigns eligible students to available seats, ensuring no two adjacent students have the same set if applicable (future scope).
+5.  **Publication**: Admin publishes the allocation. Students see their specific Lab and System Number on their dashboard.
+
+## Tech Stack
+
+*   **Frontend**: React 18, Vite, Lucide React (Icons), CSS Modules.
+*   **Backend**: Node.js, Express.js, Cors, Helmet (Security).
+*   **Database**: PostgreSQL (pg-pool).
+*   **Services**: Nodemailer (Email), QRCode.react (Generation), Html5-Qrcode (Scanning).
+*   **Hosting**: Vercel (Client), Railway (Server/DB).
+
+## Environment Setup (Local)
 
 ### Prerequisites
-- Node.js 16+
-- PostgreSQL 14+
-- npm or yarn
+*   Node.js (v18+)
+*   PostgreSQL installed locally or a remote connection string.
 
 ### Backend Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with your database credentials and JWT secret
-
-# Initialize database
-psql -U postgres -d your_database -f database/init.sql
-
-# Start server
-npm run dev
-```
+1.  Navigate to root directory.
+2.  Install dependencies: `npm install`
+3.  Create `.env` file:
+    ```
+    PORT=5000
+    DATABASE_URL=postgresql://user:pass@localhost:5432/smart_attendance
+    JWT_SECRET=your_secure_secret
+    EMAIL_USER=your_email@gmail.com
+    EMAIL_PASS=your_app_password
+    ```
+4.  Initialize Database: `npm run migrate` (or run `database/init.sql`).
+5.  Start Server: `npm run dev`
 
 ### Frontend Setup
+1.  Navigate to `client/` directory.
+2.  Install dependencies: `npm install`
+3.  Start Dev Server: `npm run dev`
 
-```bash
-cd client
+## Deployment
 
-# Install dependencies
-npm install
+### Frontend (Vercel)
+*   Connect GitHub repository.
+*   Set Root Directory to `client`.
+*   Build Command: `npm run build`
+*   Output Directory: `dist`
+*   Add environment variable: `VITE_API_URL` pointing to the backend production URL.
 
-# Configure environment
-# Create .env file with:
-# VITE_API_BASE_URL=http://localhost:3000
+### Backend (Railway)
+*   Connect GitHub repository.
+*   Add generic service.
+*   Set Start Command: `node src/index.js` (or `npm start`).
+*   Add PostgreSQL plugin.
+*   Railway automatically injects `DATABASE_URL`.
+*   Set other variables (`JWT_SECRET`, `EMAIL_USER`, etc.) in Railway dashboard.
 
-# Start development server
-npm run dev
-```
+## Security Considerations
 
-## 🌐 Deployment
+*   **Role Enforcement**: API endpoints explicitly check `req.user.role`.
+*   **Duplicate Prevention**: Database constraints prevent multiple attendance records for the same event.
+*   **Input Validation**: Inputs are sanitized to prevent SQL injection (via parameterized queries).
+*   **Cors Policy**: Restricted to allowed domains in production.
 
-### Railway (Backend)
+## Limitations & Future Improvements
 
-1. Connect your GitHub repository to Railway
-2. Set environment variables:
-   - `DATABASE_URL`: Railway PostgreSQL connection string
-   - `JWT_SECRET`: Secure random string (32+ characters)
-   - `PORT`: Auto-assigned by Railway
+*   **Current Limitation**: The QR rotation relies on client-server time synchronization. Significant drift may cause token invalidation.
+*   **Current Limitation**: Manual CSV upload is required for shortlisting; direct integration with university ERP is not yet implemented.
+*   **Future**: Implementation of WebSockets for sub-second attendance updates (currently polling).
+*   **Future**: Geofencing support to restrict scanning to specific physical coordinates.
 
-### Vercel (Frontend)
+## Screens / Flow Overview
 
-1. Import project from GitHub
-2. Set build settings:
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **Root Directory**: `client`
-3. Set environment variable:
-   - `VITE_API_BASE_URL`: Your Railway backend URL
+*   **Admin Flow**: Login -> Dashboard (Overview) -> Create Event -> Launch Projector View -> Monitor.
+*   **Student Flow**: Login (OTP) -> Dashboard (Status) -> Scan QR -> innovative Success/Failure Feedback -> View History.
+*   **Projector Flow**: Large, high-contrast display purely for QR projection and live stats, designed for readability from a distance.
 
-## 🔐 Environment Variables
+## Author
 
-### Backend (.env)
-```env
-DATABASE_URL=postgresql://user:password@host:port/database
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
-PORT=3000
-```
-
-### Frontend (client/.env)
-```env
-VITE_API_BASE_URL=http://localhost:3000
-```
-
-## 📚 API Documentation
-
-### Authentication
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login and receive JWT token
-
-### Events (Protected)
-- `GET /events` - List all events
-- `POST /events` - Create new event
-- `PUT /events/:id/state` - Update session state (ACTIVE/PAUSED/STOPPED)
-
-### Attendance (Protected)
-- `POST /attendance` - Log attendance (QR or manual)
-- `GET /attendance/my-history` - Get user's attendance history
-
-### Assessments (Protected)
-- `GET /assessments` - List assessments
-- `POST /assessments` - Create assessment
-- `POST /assessments/:id/allocations/generate` - Generate seat allocations
-
-## 🏗️ Database Schema
-
-Key tables:
-- `users` - Student and admin accounts
-- `events` - Attendance sessions
-- `attendance_logs` - Attendance records with UNIQUE constraint
-- `assessments` - Placement assessments
-- `assessment_allocations` - Seat assignments
-- `labs` - Lab configuration
-
-## 🔒 Security Features
-
-- JWT-based authentication
-- Password hashing with bcrypt
-- Role-based access control (Student/Admin)
-- Protected API routes
-- Database-level unique constraints
-- Device fingerprinting for attendance
-- Token expiry handling
-
-## 📱 User Roles
-
-### Student
-- Scan QR codes or enter manual codes
-- View attendance history
-- Check assessment allocations
-- View assigned seats
-
-### Administrator
-- Create and manage events
-- Control session states
-- Manage users and labs
-- Create assessments
-- Generate seat allocations
-- View reports and analytics
-
-## 🧪 Testing
-
-```bash
-# Backend tests
-npm test
-
-# Frontend tests
-cd client && npm test
-```
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 👥 Contributors
-
-Built for MIT Art, Design & Technology University - Training & Placement Cell
-
-## 🐛 Known Issues
-
-- QR scanner requires HTTPS in production (browser security requirement)
-- Camera permissions must be granted for QR scanning
-
-## 🔄 Version
-
-Current Version: 1.0.0
-
-## 📞 Support
-
-For issues and questions, please open a GitHub issue.
+Developed by **Pranav** for University Placement Cell automation architecture.
