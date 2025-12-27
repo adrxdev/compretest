@@ -71,7 +71,8 @@ const requestOtp = async (req, res) => {
 
     } catch (error) {
         console.error("OTP Error:", error);
-        res.status(500).json({ error: 'Failed to generate OTP.' });
+        // FIX: Return actual error details to help debug DB issues (e.g., missing table)
+        res.status(500).json({ error: error.message || 'Failed to generate OTP.' });
     }
 };
 

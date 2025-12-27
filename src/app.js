@@ -28,6 +28,24 @@ app.use('/labs', authenticateToken, labRoutes);
 app.use('/assessments', authenticateToken, assessmentRoutes);
 app.use('/student', authenticateToken, studentRoutes);
 
+// Compatibility: Also mount under /api for robust frontend connecting
+const apiRouter = express.Router();
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/users', userRoutes);
+apiRouter.use('/events', authenticateToken, eventRoutes);
+apiRouter.use('/qr-sessions', authenticateToken, qrRoutes);
+apiRouter.use('/attendance', authenticateToken, attendanceRoutes);
+apiRouter.use('/labs', authenticateToken, labRoutes);
+apiRouter.use('/assessments', authenticateToken, assessmentRoutes);
+apiRouter.use('/student', authenticateToken, studentRoutes);
+app.use('/api', apiRouter);
+
+// Global Error Handler (Ensure JSON response)
+app.use((err, req, res, next) => {
+    console.error('[Global Error]', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
+
 // Serve Frontend in Production
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../client/dist')));
