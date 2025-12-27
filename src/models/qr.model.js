@@ -56,10 +56,31 @@ const getSessionByToken = async (event_id, token) => {
   }
 };
 
+const cleanupOrphanedSessions = async () => {
+  try {
+    // Delete sessions where the linked event no longer exists
+    // (This handles cases where ON DELETE CASCADE might have been missed or disabled)
+    const query = `
+      DELETE FROM qr_sessions 
+      WHERE event_id NOT IN (SELECT id FROM events)
+      RETURNING *;
+    `;
+    const { rowCount } = await db.query(query);
+    if (rowCount > 0) {
+      console.log(`[QR Model] 🧹 Cleaned up ${rowCount} orphaned QR sessions.`);
+    }
+    return rowCount;
+  } catch (error) {
+    console.error('[QR Model] Error cleaning up orphaned sessions:', error.message);
+    return 0;
+  }
+};
+
 module.exports = {
   createSession,
   getLatestSession,
   findValidSession,
   verifyToken,
-  getSessionByToken
+  getSessionByToken,
+  cleanupOrphanedSessions
 };

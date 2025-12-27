@@ -4,6 +4,7 @@ const { pool } = require('./config/db');
 require('dotenv').config();
 const eventModel = require('./models/event.model');
 const qrService = require('./services/qr.service');
+const qrModel = require('./models/qr.model');
 
 const PORT = process.env.PORT || 3000;
 
@@ -63,6 +64,9 @@ app.get('/api/migrate/emergency', async (req, res) => {
 
 const server = app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+
+    // Clean up any orphaned sessions from before (e.g. if DB constraint failed)
+    await qrModel.cleanupOrphanedSessions();
 
     // Resume active QR sessions
     await resumeActiveSessions();
