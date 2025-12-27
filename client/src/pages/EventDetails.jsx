@@ -165,16 +165,20 @@ export default function EventDetails() {
             <div style={{
                 flex: 1,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
                 position: 'relative',
-                background: 'radial-gradient(circle at top right, #e0f2fe, #f0f9ff 60%)'
+                background: 'radial-gradient(circle at top right, #e0f2fe, #f0f9ff 60%)',
+                overflow: 'hidden'
             }}>
                 {/* Institutional Header (Top Left) */}
                 <div style={{
-                    position: 'absolute', top: '2rem', left: '2rem',
+                    width: '100%',
+                    padding: '2rem 2rem 0',
                     display: 'flex', alignItems: 'center', gap: '1rem',
-                    opacity: 0.9, zIndex: 20
+                    opacity: 0.9, zIndex: 20,
+                    boxSizing: 'border-box'
                 }}>
                     <img src="/mitadtlogo.png" alt="MIT" style={{ height: '52px' }} />
                     <div style={{ height: '36px', width: '1px', background: '#cbd5e1' }}></div>
@@ -187,7 +191,8 @@ export default function EventDetails() {
                 <div className="hide-scrollbar" style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     maxWidth: '800px', width: '100%', zIndex: 10,
-                    height: '100%', maxHeight: '90vh', overflowY: 'auto'
+                    flex: 1, // Take remaining height
+                    overflowY: 'auto'
                 }}>
                     {stats.name && (
                         <h1 style={{
