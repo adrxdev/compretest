@@ -13,6 +13,8 @@ const generateDeviceHash = (req) => {
         req.headers['x-timezone'] || ''
     ];
 
+    console.log('[DEBUG] Device components:', components);
+
     // Create a unique string from components
     const fingerprint = components.join('|');
 
@@ -28,6 +30,7 @@ const logAttendance = async (req, res) => {
 
         // 1. Generate Secure Device Hash
         const device_hash = generateDeviceHash(req);
+        console.log(`[DEBUG] Generated Hash: ${device_hash.substring(0, 10)}... for User: ${req.user.id}`);
 
         const user_id = req.user.id;
         const user = await userModel.findById(user_id);
@@ -71,8 +74,13 @@ const logAttendance = async (req, res) => {
         // 6. DEVICE LOCK CHECK
         // FIX: Use checkDeviceUsed from model (args: event_id, device_hash) which returns user_id or null
         const lockedUserId = await attendanceModel.checkDeviceUsed(event_id, device_hash);
-        if (lockedUserId && lockedUserId !== user_id) {
-            console.log('[Attendance] Device already used by another user');
+        if (lockedUserId && lockedUserId != user_id) { // Use != for loose equality safety
+            console.warn(`[Attendance] 🛑 Device Lock Triggered!`);
+            console.warn(`   Event: ${event_id}`);
+            console.warn(`   Device Hash: ${device_hash}`);
+            console.warn(`   Locked By User: ${lockedUserId}`);
+            console.warn(`   Current User: ${user_id}`);
+
             return res.status(403).json({
                 error: 'This device has already been used to mark attendance for this event by another student.'
             });
