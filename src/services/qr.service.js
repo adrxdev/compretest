@@ -17,7 +17,11 @@ const generateToken = async (eventId, intervalSeconds) => {
         });
         console.log(`[QR Service] Generated token for event ${eventId}`);
     } catch (error) {
-        console.error(`[QR Service] Error generating token for event ${eventId}:`, error);
+        console.error(`[QR Service] Error generating token for event ${eventId}:`, error.message);
+
+        // FAIL FAST: If DB insert fails (e.g. Event deleted, DB down), stop the rotation to prevent log flooding
+        console.log(`[QR Service] 🛑 Stopping zombie rotation for Event ${eventId}`);
+        stopRotation(eventId);
     }
 };
 
