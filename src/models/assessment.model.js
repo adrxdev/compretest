@@ -114,6 +114,25 @@ const deleteAllAllocations = async (assessmentId) => {
     await db.query('DELETE FROM assessment_allocations WHERE assessment_id = $1', [assessmentId]);
 };
 
+const getAllocationById = async (allocationId) => {
+    const query = 'SELECT * FROM assessment_allocations WHERE id = $1';
+    const { rows } = await db.query(query, [allocationId]);
+    return rows[0];
+};
+
+const closeAllocationGap = async (assessmentId, labId, removedSeatNumber, excludedAllocationId) => {
+    // Decrement seat numbers for all students in this lab who had a seat > removedSeatNumber
+    const query = `
+        UPDATE assessment_allocations
+        SET seat_number = seat_number - 1
+        WHERE assessment_id = $1
+          AND lab_id = $2
+          AND seat_number > $3
+          AND id != $4
+    `;
+    await db.query(query, [assessmentId, labId, removedSeatNumber, excludedAllocationId]);
+};
+
 const updateAllocation = async (allocationId, labId, seatNumber) => {
     const query = `
         UPDATE assessment_allocations
@@ -170,5 +189,7 @@ module.exports = {
     deleteAllAllocations,
     updateAllocation,
     findActiveAssessmentForUser,
-    findAllocationForUser
+    findAllocationForUser,
+    getAllocationById,
+    closeAllocationGap
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { ArrowLeft, Edit2, CheckCircle, RefreshCcw, Save } from 'lucide-react';
+import { ArrowLeft, Edit2, CheckCircle, RefreshCcw, Save, FileText, Download, Printer } from 'lucide-react';
 
 export default function SeatAllocation() {
     const { id } = useParams();
@@ -88,6 +88,37 @@ export default function SeatAllocation() {
         }
     };
 
+    const handleExport = async (type, labId = null) => {
+        try {
+            const url = `/assessments/${id}/allocations/export/${type}${labId ? `?labId=${labId}` : ''}`;
+            const response = await api.get(url, {
+                responseType: 'blob'
+            });
+
+            const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+
+            if (type === 'pdf') {
+                // Open in new tab for preview/printing
+                window.open(blobUrl, '_blank');
+            } else {
+                // Force download for CSV
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.setAttribute('download', `allocations-${id}${labId ? `-${labId}` : ''}.${type}`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            }
+
+            // Clean up blob URL after a delay to allow new tab to load
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+
+        } catch (error) {
+            console.error('Export failed', error);
+            alert('Failed to execute export');
+        }
+    };
+
     const groupedAllocations = allocations.reduce((acc, curr) => {
         const lab = curr.lab_name || 'Unassigned';
         if (!acc[lab]) acc[lab] = [];
@@ -106,9 +137,17 @@ export default function SeatAllocation() {
                 </>
             )}
             {view === 'ALLOCATED' && (
-                <button onClick={handleAutoAllocate} style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <RefreshCcw size={16} /> Reset / Re-Allocate
-                </button>
+                <>
+                    <button onClick={() => handleExport('csv')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#0f172a', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileText size={16} /> CSV
+                    </button>
+                    <button onClick={() => handleExport('pdf')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#0f172a', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Printer size={16} /> Print All (PDF)
+                    </button>
+                    <button onClick={handleAutoAllocate} style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <RefreshCcw size={16} /> Re-Allocate
+                    </button>
+                </>
             )}
         </div>
     );
@@ -166,7 +205,20 @@ export default function SeatAllocation() {
                     {Object.keys(groupedAllocations).map(labName => (
                         <div key={labName} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div style={{ padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                {labName} <span style={{ fontSize: '0.75rem', color: '#64748b', background: 'white', padding: '2px 8px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>{groupedAllocations[labName].length} Students</span>
+                                <div>
+                                    {labName} <span style={{ fontSize: '0.75rem', color: '#64748b', background: 'white', padding: '2px 8px', borderRadius: '12px', border: '1px solid #e2e8f0', marginLeft: '8px' }}>{groupedAllocations[labName].length} Students</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        // Find valid labId from one of the allocations in this group
+                                        const labId = groupedAllocations[labName][0]?.lab_id;
+                                        if (labId) handleExport('pdf', labId);
+                                    }}
+                                    title="Print this lab"
+                                    style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#475569' }}
+                                >
+                                    <Printer size={16} />
+                                </button>
                             </div>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                                 <tbody>

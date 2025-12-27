@@ -13,5 +13,7 @@ router.post('/:id/allocations/generate', authenticateToken, assessmentController
 router.post('/:id/allocations/confirm', authenticateToken, assessmentController.confirmAllocations);
 router.get('/:id/allocations', authenticateToken, assessmentController.getAllocations);
 router.put('/:id/allocations/:allocationId', authenticateToken, assessmentController.updateAllocation);
+router.get('/:id/allocations/export/csv', authenticateToken, assessmentController.exportAllocationsCsv);
+router.get('/:id/allocations/export/pdf', authenticateToken, assessmentController.exportAllocationsPdf);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const assessmentModel = require('../models/assessment.model');
 const userModel = require('../models/user.model');
-const attendanceModel = require('../models/attendance.model');
+const auditStore = require('../utils/auditStore');
+const PDFDocument = require('pdfkit');
 
 // Create Assessment
 const createAssessment = async (req, res) => {
@@ -196,19 +197,132 @@ const getAllocations = async (req, res) => {
 
 const updateAllocation = async (req, res) => {
     try {
-        const { allocationId } = req.params;
+        const { id, allocationId } = req.params;
         const { labId, seatNumber } = req.body;
 
-        // TODO: Validate conflicts
+        // 1. Fetch old state
+        const oldAllocation = await assessmentModel.getAllocationById(allocationId);
+        if (!oldAllocation) return res.status(404).json({ error: 'Allocation not found' });
 
+        const oldLabId = oldAllocation.lab_id;
+        const oldSeatNumber = oldAllocation.seat_number;
+
+        // 2. Perform Update
         const updated = await assessmentModel.updateAllocation(allocationId, labId, seatNumber);
+
+        // 3. Close Gap (Auto-Rearrange)
+        try {
+            await assessmentModel.closeAllocationGap(parseInt(id), parseInt(oldLabId), parseInt(oldSeatNumber), parseInt(allocationId));
+        } catch (gapErr) {
+            console.error('Gap closing failed (non-fatal)', gapErr);
+        }
+
+        // AUDIT LOG (Safe)
+        try {
+            auditStore.log({
+                event_id: parseInt(id),
+                action: 'SEAT_CHANGE',
+                details: `Admin moved student from Lab ${oldLabId}/Seat ${oldSeatNumber} to Lab ${labId}/Seat ${seatNumber}`
+            });
+        } catch (logErr) {
+            console.error('Audit log failed', logErr);
+        }
+
         res.json(updated);
     } catch (error) {
         if (error.code === '23505') {
             res.status(409).json({ error: 'Seat already taken in this lab' });
         } else {
-            res.status(500).json({ error: 'Internal Server Error' });
+            console.error('Update allocation failed:', error);
+            console.error('Params:', { id: req.params.id, allocationId: req.params.allocationId });
+            console.error('Body:', req.body);
+            res.status(500).json({ error: 'Internal Server Error', details: error.message });
         }
+    }
+};
+
+const exportAllocationsCsv = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const allocations = await assessmentModel.getAllocations(id);
+
+        let csv = 'Enrollment No,Name,Lab,Seat Number\n';
+        allocations.forEach(a => {
+            csv += `${a.enrollment_no},${a.user_name},${a.lab_name},${a.seat_number}\n`;
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`allocations-${id}.csv`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV Export failed', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const exportAllocationsPdf = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { labId } = req.query; // Support filtering
+        const allocations = await assessmentModel.getAllocations(id);
+        const assessment = await assessmentModel.findById(id);
+
+        const doc = new PDFDocument();
+        res.setHeader('Content-Type', 'application/pdf');
+        // Rename file if specific lab
+        const filename = labId ? `allocation-lab-${labId}.pdf` : `allocations-${id}.pdf`;
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+
+        doc.pipe(res);
+
+        // Header
+        doc.fontSize(20).text('MIT ADT University', { align: 'center' });
+        doc.fontSize(14).text('Placement & Attendance Portal', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).text(`Assessment: ${assessment.title}`, { align: 'center' });
+        doc.fontSize(12).text(`Date: ${new Date(assessment.date).toDateString()}`, { align: 'center' });
+        doc.moveDown();
+
+        // Group by Lab
+        const grouped = allocations.reduce((acc, curr) => {
+            // Filter if labId is provided
+            if (labId && curr.lab_id != labId) return acc;
+
+            if (!acc[curr.lab_name]) acc[curr.lab_name] = [];
+            acc[curr.lab_name].push(curr);
+            return acc;
+        }, {});
+
+        Object.keys(grouped).forEach(labName => {
+            doc.addPage();
+            doc.fontSize(18).text(`Lab: ${labName}`, { underline: true });
+            doc.moveDown();
+
+            const items = grouped[labName];
+
+            // Simple Table Header
+            let y = doc.y;
+            doc.fontSize(12).font('Helvetica-Bold');
+            doc.text('Seat', 50, y);
+            doc.text('Enrollment', 120, y);
+            doc.text('Name', 250, y);
+            doc.moveDown();
+            doc.font('Helvetica');
+
+            items.forEach(item => {
+                y = doc.y;
+                doc.text(item.seat_number.toString(), 50, y);
+                doc.text(item.enrollment_no || '-', 120, y);
+                doc.text(item.user_name, 250, y);
+                doc.moveDown(0.5);
+            });
+        });
+
+        doc.end();
+
+    } catch (error) {
+        console.error('PDF Export failed', error);
+        res.status(500).end();
     }
 };
 
@@ -221,5 +335,7 @@ module.exports = {
     generateAllocations,
     confirmAllocations,
     getAllocations,
-    updateAllocation
+    updateAllocation,
+    exportAllocationsCsv,
+    exportAllocationsPdf
 };
