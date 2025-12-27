@@ -198,13 +198,13 @@ export default function AdminEvents() {
                                     </td>
                                     <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <Link to={`/admin/events/${event.id}`} style={{ textDecoration: 'none' }}>
+                                            <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                                                 <button style={{
-                                                    background: 'white', border: '1px solid #cbd5e1', color: '#475569',
+                                                    background: 'white', border: '1px solid #cbd5e1', color: '#4c1d95',
                                                     padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
                                                     fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px'
                                                 }}>
-                                                    <Monitor size={14} /> Manage
+                                                    <Monitor size={14} /> Projector View
                                                 </button>
                                             </Link>
 
