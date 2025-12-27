@@ -35,6 +35,32 @@ This portal digitizes the entire placement workflow. It enables administrators t
 *   **Live Counter**: Displays total present count in real-time to motivate punctuality.
 *   **Status Indicators**: Visual cues for session state (Active/Paused/Stopped).
 
+## Tech Stack
+
+### Frontend
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+
+### Backend
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+
+### Database
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+
+### Authentication
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+
+### Hosting & Deployment
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+
+*   **Frontend**: React for component-based UI, Vite for ultra-fast build times.
+*   **Backend**: Node.js & Express for scalable, non-blocking API handling.
+*   **Database**: PostgreSQL for robust relational data integrity.
+*   **Auth**: JWT for secure, stateless session management.
+*   **Deployment**: Vercel (Client) & Railway (Server) for reliable CI/CD pipelines.
+
 ## System Architecture
 
 The application checks for robustness and integrity using a monolithic architecture with separated concerns:
@@ -68,13 +94,7 @@ The application checks for robustness and integrity using a monolithic architect
 4.  **Allocation**: The system randomly assigns eligible students to available seats, ensuring no two adjacent students have the same set if applicable (future scope).
 5.  **Publication**: Admin publishes the allocation. Students see their specific Lab and System Number on their dashboard.
 
-## Tech Stack
 
-*   **Frontend**: React 18, Vite, Lucide React (Icons), CSS Modules.
-*   **Backend**: Node.js, Express.js, Cors, Helmet (Security).
-*   **Database**: PostgreSQL (pg-pool).
-*   **Services**: Nodemailer (Email), QRCode.react (Generation), Html5-Qrcode (Scanning).
-*   **Hosting**: Vercel (Client), Railway (Server/DB).
 
 ## Environment Setup (Local)
 
