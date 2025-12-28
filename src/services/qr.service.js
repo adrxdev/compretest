@@ -30,13 +30,18 @@ const startRotation = async (eventId, intervalSeconds) => {
 
     // Verify event actually exists before starting rotation
     try {
-        const { rowCount } = await require('../config/db').query(
-            'SELECT 1 FROM events WHERE id = $1',
+        const { rows } = await require('../config/db').query(
+            'SELECT session_state FROM events WHERE id = $1',
             [eventId]
         );
 
-        if (rowCount === 0) {
-            console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} not found in DB`);
+        if (rows.length === 0) {
+            console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} not found`);
+            return;
+        }
+
+        if (rows[0].session_state !== 'ACTIVE') {
+            console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} is ${rows[0].session_state}`);
             return;
         }
 

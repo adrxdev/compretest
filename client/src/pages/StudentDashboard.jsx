@@ -169,9 +169,9 @@ export default function StudentDashboard() {
                 const vWidth = videoRef.current.videoWidth;
                 const vHeight = videoRef.current.videoHeight;
 
-                // Crop dimensions (approx 1/3 of the screen)
-                const cropWidth = Math.floor(vWidth * 0.35);
-                const cropHeight = Math.floor(vHeight * 0.35);
+                // Crop dimensions (Increased to 80% for long-distance scanning)
+                const cropWidth = Math.floor(vWidth * 0.80);
+                const cropHeight = Math.floor(vHeight * 0.80);
                 const startX = (vWidth - cropWidth) / 2;
                 const startY = (vHeight - cropHeight) / 2;
 
@@ -209,35 +209,17 @@ export default function StudentDashboard() {
                                 ctx.lineTo(corners[3].x, corners[3].y);
                                 ctx.closePath();
 
-                                // Validation Logic
-                                const dx = corners[1].x - corners[0].x; // Approx width
-                                const dy = corners[2].y - corners[1].y; // Approx height
-                                const area = Math.abs(dx * dy);
-                                const frameArea = canvas.width * canvas.height;
-                                const sizePercent = (area / frameArea) * 100;
-                                const aspect = Math.abs(dx / dy);
+                                // Validation Logic [REMOVED] - Accept All
+                                ctx.strokeStyle = '#4ade80'; // Always Green
+                                ctx.lineWidth = 4;
+                                ctx.stroke();
 
-                                const isGoodSize = sizePercent > 10; // >10% coverage
-                                const isGoodAspect = aspect > 0.7 && aspect < 1.4; // Tolerant square
+                                // Pulse effect for valid code
+                                ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
+                                ctx.fill();
 
-                                if (isGoodSize && isGoodAspect) {
-                                    ctx.strokeStyle = '#4ade80'; // Green = Good
-                                    ctx.lineWidth = 4;
-                                    ctx.stroke();
-
-                                    // Pulse effect for valid code
-                                    ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
-                                    ctx.fill();
-
-                                    detectedCode = code.rawValue;
-                                    validationStatus = 'VALID';
-                                } else {
-                                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'; // Red = Bad
-                                    ctx.lineWidth = 3;
-                                    ctx.stroke();
-                                    validationStatus = 'INVALID';
-                                    console.log(`[Scan] Ignored: Size=${sizePercent.toFixed(1)}%, Aspect=${aspect.toFixed(2)}`);
-                                }
+                                detectedCode = code.rawValue;
+                                validationStatus = 'VALID';
                             } else {
                                 // Fallback if no corners (rare)
                                 detectedCode = code.rawValue;
@@ -466,15 +448,16 @@ export default function StudentDashboard() {
                             {/* Dark Overlay & Scan Box */}
                             <div style={{
                                 position: 'absolute',
-                                inset: 0,
-                                zIndex: 5,
-                                pointerEvents: 'none',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                pointerEvents: 'none'
                             }}>
-                                {/* Magnifier Removed */}
 
                                 {/* Scan Box Area */}
                                 <div style={{
@@ -507,9 +490,10 @@ export default function StudentDashboard() {
                                         inset: 0,
                                         border: isDetected ? '4px solid #4ade80' : '2px solid rgba(255, 255, 255, 0.5)',
                                         borderRadius: '24px',
-                                        boxShadow: isDetected ? '0 0 20px rgba(74, 222, 128, 0.6)' : 'none',
+                                        boxShadow: isDetected ? '0 0 30px rgba(74, 222, 128, 0.5)' : 'none',
                                         transition: 'all 0.3s ease',
-                                        overflow: 'hidden' // Clip laser
+                                        overflow: 'hidden',
+                                        animation: isDetected ? 'none' : 'pulseGlow 3s infinite'
                                     }}>
                                         {/* Corner Markers (Visual flair) */}
                                         {!isDetected && (
@@ -521,63 +505,23 @@ export default function StudentDashboard() {
                                             </>
                                         )}
 
-                                        {/* Scanner Laser Animation */}
-                                        {!isDetected && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                right: 0,
-                                                height: '2px',
-                                                background: 'linear-gradient(to right, transparent, #3b82f6, transparent)',
-                                                boxShadow: '0 0 10px #3b82f6',
-                                                animation: 'scanLaser 2s linear infinite',
-                                                opacity: 0.8
-                                            }} />
-                                        )}
+                                        {/* Scanner Laser Animation [REMOVED] */}
+
                                     </div>
                                 </div>
 
-                                {/* Instructions Pill */}
-                                <div style={{
-                                    position: 'absolute',
-                                    bottom: '15%',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    zIndex: 20,
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    pointerEvents: 'none'
-                                }}>
-                                    <div style={{
-                                        display: 'inline-block',
-                                        background: isDetected ? 'rgba(74, 222, 128, 0.2)' : 'rgba(0, 0, 0, 0.6)',
-                                        backdropFilter: 'blur(8px)',
-                                        padding: '0.6rem 1.25rem',
-                                        borderRadius: '30px',
-                                        border: isDetected ? '1px solid rgba(74, 222, 128, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        <p style={{
-                                            margin: 0,
-                                            fontSize: '0.9rem',
-                                            fontWeight: '600',
-                                            letterSpacing: '0.05em',
-                                            color: isDetected ? '#4ade80' : 'white',
-                                            textShadow: '0 1px 2px rgba(0,0,0,0.5)'
-                                        }}>
-                                            {isDetected ? "HOLD STEADY..." : "ALIGN QR INSIDE BOX"}
-                                        </p>
-                                    </div>
-                                </div>
 
                                 {/* CSS for Animations */}
                                 <style>{`
-                                    @keyframes scanLaser {
-                                        0% { top: 0%; opacity: 0; }
-                                        10% { opacity: 1; }
-                                        90% { opacity: 1; }
-                                        100% { top: 100%; opacity: 0; }
+                                    @keyframes pulseGlow {
+                                        0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); border-color: rgba(74, 222, 128, 0.6); }
+                                        70% { box-shadow: 0 0 20px 0 rgba(74, 222, 128, 0.0); border-color: rgba(74, 222, 128, 0.3); }
+                                        100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.0); border-color: rgba(74, 222, 128, 0.6); }
+                                    }
+                                    @keyframes breathe {
+                                        0% { opacity: 0.3; transform: scale(0.98); }
+                                        50% { opacity: 0.6; transform: scale(1.0); }
+                                        100% { opacity: 0.3; transform: scale(0.98); }
                                     }
                                 `}</style>
                             </div>

@@ -248,8 +248,9 @@ const startSession = async (req, res) => {
 const pauseSession = async (req, res) => {
     try {
         const { id } = req.params;
-        const updated = await eventModel.updateSessionState(id, 'NOT_STARTED'); // Pause = Back to Not Started logic-wise for now, or new state? 
-        // User req: "PAUSE SESSION → session_state = NOT_STARTED"
+        const updated = await eventModel.updateSessionState(id, 'PAUSED');
+        // Stop QR rotation
+        qrService.stopRotation(id);
         res.json(updated);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -259,7 +260,19 @@ const pauseSession = async (req, res) => {
 const stopSession = async (req, res) => {
     try {
         const { id } = req.params;
-        const updated = await eventModel.updateSessionState(id, 'STOPPED');
+        const updated = await eventModel.updateSessionState(id, 'ENDED');
+        // Stop QR rotation as well
+        qrService.stopRotation(id);
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+const publishEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await eventModel.updateSessionState(id, 'READY');
         res.json(updated);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -320,5 +333,6 @@ module.exports = {
     startSession,
     pauseSession,
     stopSession,
+    publishEvent,
     getEventAttendance
 };

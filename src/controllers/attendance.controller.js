@@ -45,12 +45,15 @@ const logAttendance = async (req, res) => {
 
         if (!event) return res.status(404).json({ error: 'Event not found' });
 
-        const session_state = event.session_state || 'NOT_STARTED';
+        const session_state = event.session_state || 'DRAFT';
 
         // 3. CHECK SESSION STATE
         if (session_state !== 'ACTIVE') {
             console.log('[Attendance] Session not active:', session_state);
-            return res.status(400).json({ error: 'Attendance not open yet or session stopped.' });
+            let msg = 'Attendance not open yet.';
+            if (session_state === 'PAUSED') msg = 'Session is paused. Please wait.';
+            if (session_state === 'ENDED') msg = 'Session has ended.';
+            return res.status(403).json({ error: msg });
         }
 
         // 4. CHECK EXISTING ATTENDANCE

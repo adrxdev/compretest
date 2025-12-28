@@ -48,7 +48,7 @@ export default function EventDetails() {
         return () => clearInterval(interval);
     }, [id]);
 
-    const [sessionState, setSessionState] = useState('NOT_STARTED');
+    const [sessionState, setSessionState] = useState('DRAFT');
 
     const fetchAuditAlerts = async () => {
         try {
@@ -141,11 +141,11 @@ export default function EventDetails() {
                 fetchCurrentQr();
             }
             if (action === 'pause-session') {
-                setSessionState('NOT_STARTED');
+                setSessionState('PAUSED');
                 setToken(null);
             }
             if (action === 'stop-session') {
-                setSessionState('STOPPED');
+                setSessionState('ENDED');
                 setToken(null);
                 await api.post(`/events/${id}/stop-qr`);
             }
@@ -252,15 +252,15 @@ export default function EventDetails() {
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                             color: '#94a3b8'
                         }}>
-                            {sessionState === 'STOPPED'
+                            {sessionState === 'ENDED'
                                 ? <ShieldAlert size={64} style={{ opacity: 0.6, marginBottom: '1rem', color: '#ef4444' }} />
                                 : <Clock size={64} style={{ opacity: 0.6, marginBottom: '1rem', color: '#3b82f6' }} />
                             }
                             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#334155', margin: '0 0 0.5rem 0' }}>
-                                {sessionState === 'STOPPED' ? 'Session Ended' : 'Waiting to Start'}
+                                {sessionState === 'ENDED' ? 'Session Ended' : (sessionState === 'PAUSED' ? 'Session Paused' : 'Waiting to Start')}
                             </h3>
                             <p style={{ fontSize: '1rem', textAlign: 'center', maxWidth: '80%' }}>
-                                {sessionState === 'STOPPED' ? 'Attendance is closed.' : 'The QR code will appear here once the session begins.'}
+                                {sessionState === 'ENDED' ? 'Attendance is closed.' : 'The QR code will appear here once the session begins.'}
                             </p>
                         </div>
                     )}
@@ -273,7 +273,7 @@ export default function EventDetails() {
                         justifyContent: 'center',
                         paddingBottom: '2rem' // Ensure space at bottom
                     }}>
-                        {(sessionState === 'NOT_STARTED' || sessionState === 'STOPPED') && (
+                        {['DRAFT', 'READY', 'PAUSED'].includes(sessionState) && (
                             <button
                                 onClick={() => handleSessionAction('start-session')}
                                 style={{
@@ -284,7 +284,7 @@ export default function EventDetails() {
                                     transition: 'transform 0.2s'
                                 }}
                             >
-                                <Play size={18} fill="white" /> {sessionState === 'STOPPED' ? 'Restart Session' : 'Start Session'}
+                                <Play size={18} fill="white" /> {sessionState === 'PAUSED' ? 'Resume Session' : 'Start Session'}
                             </button>
                         )}
                         {sessionState === 'ACTIVE' && (
@@ -300,7 +300,7 @@ export default function EventDetails() {
                                 <Pause size={18} fill="white" /> Pause
                             </button>
                         )}
-                        {sessionState === 'ACTIVE' && (
+                        {['ACTIVE', 'PAUSED'].includes(sessionState) && (
                             <button
                                 onClick={() => handleSessionAction('stop-session')}
                                 style={{
