@@ -242,11 +242,7 @@ export default function EventDetails() {
                                 </div>
                             </div>
 
-                            {/* Guidance Text */}
-                            <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#64748b' }}>
-                                <p style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', fontWeight: '600' }}>Scan from your seat</p>
-                                <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>Zoom camera if needed</p>
-                            </div>
+
                         </div>
                     ) : (
                         <div style={{
