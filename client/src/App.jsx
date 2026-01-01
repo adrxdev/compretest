@@ -21,6 +21,8 @@ import AdminAllocations from './pages/admin/AdminAllocations';
 import AdminLabs from './pages/admin/AdminLabs';
 import AdminReports from './pages/admin/AdminReports';
 import AdminProfile from './pages/admin/AdminProfile';
+import AdminPlacements from './pages/admin/AdminPlacements';
+import CreatePlacement from './pages/admin/CreatePlacement';
 
 import ProfileSetup from './pages/ProfileSetup';
 
@@ -65,6 +67,8 @@ function App() {
               <Route path="events/:id/attendance" element={<AdminEventAttendance />} />
               <Route path="attendance" element={<AdminAttendance />} />
               <Route path="assessments" element={<AdminAssessments />} />
+              <Route path="placements" element={<AdminPlacements />} />
+              <Route path="placements/create" element={<CreatePlacement />} />
               <Route path="assessments/create" element={<CreateAssessment />} />
               <Route path="assessments/:id" element={<AdminAssessmentDetails />} />
               <Route path="allocations" element={<AdminAllocations />} />

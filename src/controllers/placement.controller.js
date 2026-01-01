@@ -43,16 +43,24 @@ const createDrive = async (req, res) => {
 
 const getAllDrives = async (req, res) => {
     try {
-        const studentId = req.user.id;
-        const student = await userModel.findById(studentId);
-
-        if (!student) {
-            return res.status(404).json({ error: 'Student profile not found' });
-        }
+        console.log('getAllDrives called by:', req.user.id, req.user.role);
+        const userId = req.user.id;
+        const userRole = req.user.role ? req.user.role.toLowerCase() : '';
 
         const drives = await placementModel.getAllDrives();
 
-        // Compute Eligibility for each drive
+        // If Admin, return raw drives
+        if (userRole === 'admin') {
+            return res.json(drives);
+        }
+
+        // If Student, compute eligibility
+        const student = await userModel.findById(userId);
+        if (!student) {
+            console.error('Student profile not found for ID:', userId);
+            return res.status(404).json({ error: 'Student profile not found' });
+        }
+
         const drivesWithEligibility = drives.map(drive => {
             const isEligible = checkEligibility(student, drive);
             return { ...drive, isEligible };

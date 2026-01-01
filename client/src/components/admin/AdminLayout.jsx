@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, LayoutDashboard, Calendar, Users, Briefcase, Award, Settings, Menu, X, Monitor, FileText } from 'lucide-react';
+import { LogOut, LayoutDashboard, Calendar, Users, Briefcase, Award, Settings, Menu, X, Monitor, FileText, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,6 +20,7 @@ export default function AdminLayout({ children, title, actions }) {
         { icon: Users, label: 'Users', path: '/admin/users' },
         { icon: Monitor, label: 'Labs', path: '/admin/labs' },
         { icon: Award, label: 'Assessments', path: '/admin/assessments' },
+        { icon: Building2, label: 'Placements', path: '/admin/placements' },
         { icon: Briefcase, label: 'Allocations', path: '/admin/allocations' },
         { icon: FileText, label: 'Reports', path: '/admin/reports' },
     ];
