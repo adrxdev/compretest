@@ -62,7 +62,7 @@ export default function StudentAttendance() {
 
         if (cleanupRef.current) cleanupRef.current();
 
-        const constraints = { video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } };
+        const constraints = { video: { facingMode: "environment" } };
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -94,14 +94,10 @@ export default function StudentAttendance() {
 
                 const vWidth = videoRef.current.videoWidth;
                 const vHeight = videoRef.current.videoHeight;
-                const cropWidth = Math.floor(vWidth * 0.80);
-                const cropHeight = Math.floor(vHeight * 0.80);
-                const startX = (vWidth - cropWidth) / 2;
-                const startY = (vHeight - cropHeight) / 2;
 
-                canvas.width = cropWidth;
-                canvas.height = cropHeight;
-                ctx.drawImage(videoRef.current, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+                canvas.width = vWidth;
+                canvas.height = vHeight;
+                ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
                 let detectedCode = null;
                 let validationStatus = 'NONE';
@@ -261,10 +257,7 @@ export default function StudentAttendance() {
                         <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '400px', background: 'black' }}>
                             <div id="reader" style={{ width: '100%', height: '100%' }}></div>
 
-                            {/* Overlay */}
-                            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <div style={{ width: '70%', aspectRatio: '1/1', border: isDetected ? '4px solid #4ade80' : '2px solid rgba(255,255,255,0.5)', borderRadius: '24px', transition: 'all 0.2s' }}></div>
-                            </div>
+
                         </div>
                         <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#64748b', marginTop: '1rem' }}>
                             Point camera at the QR code.
