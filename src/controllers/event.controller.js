@@ -314,6 +314,17 @@ const remove = async (req, res) => {
     }
 };
 
+const getProxyAttempts = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const attempts = await attendanceModel.getProxyAttemptsByEvent(id);
+        res.json(attempts);
+    } catch (error) {
+        console.error('Error fetching proxy attempts:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     create,
     update,
@@ -326,7 +337,11 @@ module.exports = {
     exportCsv,
     exportPdf,
     getRecentAttendance,
+    getRecentAttendance,
+    getRecentAttendance,
     getAuditAlerts,
+    getProxyAttempts,
+    getProxyAttempts,
     openEntry,
     openExit,
     closeAttendance,

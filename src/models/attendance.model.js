@@ -138,6 +138,7 @@ module.exports = {
   countByEvent,
   exportByEvent,
   getRecentByEvent,
+  getProxyAttemptsByEvent,
   findAllByEvent,
   findAllByEvent,
   findByUser,

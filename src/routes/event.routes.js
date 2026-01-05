@@ -15,6 +15,7 @@ router.get('/:id/export-pdf', eventController.exportPdf);
 router.get('/:id/recent-attendance', eventController.getRecentAttendance);
 router.get('/:id/attendance', eventController.getEventAttendance);
 router.get('/:id/audit-alerts', eventController.getAuditAlerts);
+router.get('/:id/proxy-attempts', eventController.getProxyAttempts);
 
 router.post('/:id/open-entry', eventController.openEntry);
 router.post('/:id/open-exit', eventController.openExit);

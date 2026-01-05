@@ -84,7 +84,16 @@ const logAttendance = async (req, res) => {
             console.warn(`   Locked By User: ${lockedUserId}`);
             console.warn(`   Current User: ${user_id}`);
 
-            return res.status(403).json({
+            // LOG PROXY ATTEMPT
+            await attendanceModel.logAttendance({
+                user_id,
+                event_id,
+                qr_session_id: null,
+                device_hash,
+                status: 'PROXY_REJECTED'
+            });
+
+            return res.status(409).json({
                 error: 'This device has already been used to mark attendance for this event by another student.'
             });
         }

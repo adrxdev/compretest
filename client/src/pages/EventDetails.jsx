@@ -10,6 +10,8 @@ export default function EventDetails() {
     const [token, setToken] = useState(null);
     const [stats, setStats] = useState({ count: 0 });
     const [recentLogs, setRecentLogs] = useState([]);
+    const [proxyLogs, setProxyLogs] = useState([]);
+    const [activeTab, setActiveTab] = useState('recent'); // 'recent' | 'proxy'
     const [message, setMessage] = useState('');
     const [highlight, setHighlight] = useState(false);
     const lastTopRef = useRef(null);
@@ -36,12 +38,14 @@ export default function EventDetails() {
         fetchCurrentQr();
         fetchStats();
         fetchRecentLogs();
+        fetchProxyLogs();
         fetchAuditAlerts();
 
         const interval = setInterval(() => {
             fetchCurrentQr();
             fetchStats();
             fetchRecentLogs();
+            fetchProxyLogs();
             fetchAuditAlerts();
         }, 3000); // 3s poll (aligned with requirements)
 
@@ -125,6 +129,15 @@ export default function EventDetails() {
             setRecentLogs(newLogs);
         } catch (err) {
             console.error('Recent logs error', err);
+        }
+    };
+
+    const fetchProxyLogs = async () => {
+        try {
+            const res = await api.get(`/events/${id}/proxy-attempts`);
+            setProxyLogs(res.data);
+        } catch (err) {
+            console.error('Proxy logs error', err);
         }
     };
 
@@ -399,48 +412,111 @@ export default function EventDetails() {
 
                 {/* Feed List */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '0 1.5rem', background: '#f8fafc' }}>
-                    <div style={{ padding: '1rem 0 0.5rem', position: 'sticky', top: 0, background: '#f8fafc', zIndex: 10, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Activity size={14} color="#94a3b8" />
-                        <h4 style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Recent Scans</h4>
+                    <div style={{ padding: '1rem 0 0.5rem', position: 'sticky', top: 0, background: '#f8fafc', zIndex: 10, display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+                        <button
+                            onClick={() => setActiveTab('recent')}
+                            style={{
+                                background: 'none', border: 'none', padding: '0.5rem 0',
+                                borderBottom: activeTab === 'recent' ? '2px solid #3b82f6' : '2px solid transparent',
+                                color: activeTab === 'recent' ? '#3b82f6' : '#94a3b8',
+                                fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Recent Scans
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('proxy')}
+                            style={{
+                                background: 'none', border: 'none', padding: '0.5rem 0',
+                                borderBottom: activeTab === 'proxy' ? '2px solid #ef4444' : '2px solid transparent',
+                                color: activeTab === 'proxy' ? '#ef4444' : '#94a3b8',
+                                fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Proxy Attempts
+                        </button>
                     </div>
 
-                    {recentLogs.length === 0 ? (
-                        <div style={{ padding: '3rem 0', textAlign: 'center', color: '#cbd5e1' }}>
-                            <p style={{ fontSize: '0.9rem' }}>Waiting for first scan...</p>
-                        </div>
+                    {activeTab === 'recent' ? (
+                        recentLogs.length === 0 ? (
+                            <div style={{ padding: '3rem 0', textAlign: 'center', color: '#cbd5e1' }}>
+                                <p style={{ fontSize: '0.9rem' }}>Waiting for first scan...</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '2rem', paddingTop: '1rem' }}>
+                                {recentLogs.map((log, i) => (
+                                    <div key={i} style={{
+                                        padding: '1rem',
+                                        background: 'white',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                        border: (i === 0 && highlight) ? '1px solid #bbf7d0' : '1px solid #f1f5f9',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        transition: 'all 0.5s ease'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{
+                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                background: '#f0f9ff', color: '#0ea5e9', fontWeight: '700',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem'
+                                            }}>
+                                                {log.name?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>{log.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{log.enrollment_no}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>
+                                            {new Date(log.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '2rem' }}>
-                            {recentLogs.map((log, i) => (
-                                <div key={i} style={{
-                                    padding: '1rem',
-                                    background: 'white',
-                                    borderRadius: '12px',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                                    border: (i === 0 && highlight) ? '1px solid #bbf7d0' : '1px solid #f1f5f9',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    transition: 'all 0.5s ease'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div style={{
-                                            width: '36px', height: '36px', borderRadius: '50%',
-                                            background: '#f0f9ff', color: '#0ea5e9', fontWeight: '700',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem'
-                                        }}>
-                                            {log.name?.charAt(0)}
+                        proxyLogs.length === 0 ? (
+                            <div style={{ padding: '3rem 0', textAlign: 'center', color: '#cbd5e1' }}>
+                                <ShieldAlert size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                                <p style={{ fontSize: '0.9rem' }}>No proxy attempts recorded.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '2rem', paddingTop: '1rem' }}>
+                                {proxyLogs.map((log, i) => (
+                                    <div key={i} style={{
+                                        padding: '1rem',
+                                        background: '#fef2f2',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                        border: '1px solid #fecaca',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{
+                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                background: '#fecaca', color: '#dc2626', fontWeight: '700',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem'
+                                            }}>
+                                                !
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '600', color: '#7f1d1d', fontSize: '0.9rem' }}>{log.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{log.enrollment_no}</div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>{log.name}</div>
-                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{log.enrollment_no}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '500' }}>
+                                            {new Date(log.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>
-                                        {new Date(log.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )
                     )}
                 </div>
 
