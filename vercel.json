@@ -6,7 +6,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "https://smart-attendance-system-production.up.railway.app/api/$1"
+            "destination": "https://smart-attendance-system-production-ec2b.up.railway.app/api/$1"
         }
     ]
 }
