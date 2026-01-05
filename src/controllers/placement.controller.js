@@ -41,6 +41,24 @@ const createDrive = async (req, res) => {
 
 // --- Student Controllers ---
 
+const deleteDrive = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await placementModel.deleteDrive(id);
+
+        if (!deleted) {
+            return res.status(404).json({ error: 'Drive not found' });
+        }
+
+        res.json({ message: 'Drive deleted successfully', id });
+    } catch (err) {
+        console.error('Delete Drive Error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+// --- Student Controllers ---
+
 const getAllDrives = async (req, res) => {
     try {
         console.log('getAllDrives called by:', req.user.id, req.user.role);
@@ -139,8 +157,48 @@ const checkEligibility = (student, driveRules) => {
     return true;
 };
 
+const updateDrive = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { company_name, role, job_type, stipend_ctc, description, deadline, eligibility } = req.body;
+
+        // 1. Update Drive Details
+        const updatedDrive = await placementModel.updateDrive(id, {
+            company_name, role, job_type, stipend_ctc, description, deadline
+        });
+
+        if (!updatedDrive) {
+            return res.status(404).json({ error: 'Drive not found' });
+        }
+
+        // 2. Update Eligibility (if provided)
+        if (eligibility) {
+            await placementModel.setEligibilityRules(id, eligibility);
+        }
+
+        res.json({ message: 'Drive updated successfully', drive: updatedDrive });
+    } catch (err) {
+        console.error('Update Drive Error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const getStudentApplications = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const applications = await placementModel.getStudentApplications(studentId);
+        res.json(applications);
+    } catch (err) {
+        console.error('Get Student Applications Error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     createDrive,
+    updateDrive,
+    deleteDrive,
     getAllDrives,
-    applyToDrive
+    applyToDrive,
+    getStudentApplications
 };

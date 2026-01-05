@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Plus, Building2, Calendar, Users, ArrowRight } from 'lucide-react';
+import { Plus, Building2, Calendar, Users, ArrowRight, Trash2, Edit2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -31,6 +31,25 @@ export default function AdminPlacements() {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this drive? This cannot be undone.')) return;
+
+        try {
+            const response = await fetch(`/api/placement/admin/drives/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to delete drive');
+
+            setDrives(drives.filter(d => d.id !== id));
+        } catch (err) {
+            alert('Error deleting drive: ' + err.message);
         }
     };
 
@@ -107,14 +126,35 @@ export default function AdminPlacements() {
                                             {new Date(drive.deadline).toLocaleDateString()}
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <span style={{
-                                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600',
-                                                background: isExpired ? '#fef2f2' : '#f0fdf4',
-                                                color: isExpired ? '#ef4444' : '#16a34a',
-                                                border: isExpired ? '1px solid #fecaca' : '1px solid #bbf7d0'
-                                            }}>
-                                                {isExpired ? 'CLOSED' : 'OPEN'}
-                                            </span>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <span style={{
+                                                    padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600',
+                                                    background: isExpired ? '#fef2f2' : '#f0fdf4',
+                                                    color: isExpired ? '#ef4444' : '#16a34a',
+                                                    border: isExpired ? '1px solid #fecaca' : '1px solid #bbf7d0'
+                                                }}>
+                                                    {isExpired ? 'CLOSED' : 'OPEN'}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleDelete(drive.id)}
+                                                    style={{
+                                                        background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444',
+                                                        padding: '4px', borderRadius: '4px'
+                                                    }}
+                                                    title="Delete Drive"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                                <Link
+                                                    to={`/admin/placements/edit/${drive.id}`}
+                                                    style={{
+                                                        color: '#2563eb', padding: '4px', display: 'flex', alignItems: 'center'
+                                                    }}
+                                                    title="Edit Drive"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 );

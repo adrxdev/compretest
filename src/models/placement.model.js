@@ -5,8 +5,8 @@ const db = require('../config/db');
 const createDrive = async (data) => {
     // data = { company_name, role, job_type, stipend_ctc, description, deadline }
     const query = `
-        INSERT INTO placement_drives (company_name, role, job_type, stipend_ctc, description, deadline)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO placement_drives (company_name, role, job_type, stipend_ctc, description, deadline, industry, location, about_company, selection_process, bond_details, criteria_details)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *;
     `;
     const values = [
@@ -15,7 +15,13 @@ const createDrive = async (data) => {
         data.job_type,
         data.stipend_ctc,
         data.description,
-        data.deadline
+        data.deadline,
+        data.industry,
+        data.location,
+        data.about_company,
+        data.selection_process,
+        data.bond_details,
+        data.criteria_details
     ];
     const { rows } = await db.query(query, values);
     return rows[0];
@@ -41,6 +47,14 @@ const getDriveById = async (id) => {
         LEFT JOIN eligibility_rules er ON pd.id = er.drive_id
         WHERE pd.id = $1;
     `;
+    const { rows } = await db.query(query, [id]);
+    return rows[0];
+};
+
+// --- Eligibility Rules ---
+
+const deleteDrive = async (id) => {
+    const query = 'DELETE FROM placement_drives WHERE id = $1 RETURNING *';
     const { rows } = await db.query(query, [id]);
     return rows[0];
 };
@@ -94,10 +108,39 @@ const getStudentApplications = async (studentId) => {
     return rows;
 };
 
+const updateDrive = async (id, data) => {
+    const query = `
+        UPDATE placement_drives 
+        SET company_name = $1, role = $2, job_type = $3, stipend_ctc = $4, description = $5, deadline = $6, industry = $7, location = $8, about_company = $9, selection_process = $10, bond_details = $11, criteria_details = $12
+        WHERE id = $13
+        RETURNING *;
+    `;
+    const values = [
+        data.company_name,
+        data.role,
+        data.job_type,
+        data.stipend_ctc,
+        data.description,
+        data.deadline,
+        data.industry,
+        data.location,
+        data.about_company,
+        data.selection_process,
+        data.bond_details,
+        data.criteria_details,
+        id
+    ];
+    const { rows } = await db.query(query, values);
+    return rows[0];
+};
+
 module.exports = {
     createDrive,
+    updateDrive,
     getAllDrives,
     getDriveById,
+    deleteDrive,
+    setEligibilityRules,
     setEligibilityRules,
     checkApplicationExists,
     applyToDrive,

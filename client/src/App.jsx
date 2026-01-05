@@ -3,6 +3,10 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentPlacements from './pages/student/StudentPlacements';
+
+import StudentJobDetails from './pages/student/StudentJobDetails';
+import StudentAttendance from './pages/student/StudentAttendance';
 // import AdminDashboard from './pages/AdminDashboard'; // Deprecated
 import EventDetails from './pages/EventDetails';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -49,9 +53,21 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/scan" element={
+            <Route path="/student/attendance" element={
               <ProtectedRoute role="student">
-                <StudentDashboard />
+                <StudentAttendance />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/student/placements" element={
+              <ProtectedRoute role="student">
+                <StudentPlacements />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/student/placements/:id" element={
+              <ProtectedRoute role="student">
+                <StudentJobDetails />
               </ProtectedRoute>
             } />
 
@@ -69,6 +85,7 @@ function App() {
               <Route path="assessments" element={<AdminAssessments />} />
               <Route path="placements" element={<AdminPlacements />} />
               <Route path="placements/create" element={<CreatePlacement />} />
+              <Route path="placements/edit/:id" element={<CreatePlacement />} />
               <Route path="assessments/create" element={<CreateAssessment />} />
               <Route path="assessments/:id" element={<AdminAssessmentDetails />} />
               <Route path="allocations" element={<AdminAllocations />} />

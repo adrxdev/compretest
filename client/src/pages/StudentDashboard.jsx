@@ -1,65 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { QrCode, LogOut, MapPin, ClipboardList, Home, History, ScanLine, X } from 'lucide-react';
-import { Html5Qrcode } from "html5-qrcode";
+import { QrCode, LogOut, MapPin, ClipboardList, Home, History, ScanLine, X, Briefcase, ArrowRight, UserCheck } from 'lucide-react';
 
 export default function StudentDashboard() {
     const { user, logout } = useAuth();
 
-    // Data State
     const [activeEvent, setActiveEvent] = useState(null);
     const [activeAssessment, setActiveAssessment] = useState(null);
     const [myAllocation, setMyAllocation] = useState(null);
     const [history, setHistory] = useState([]);
-
-    // UI State
-    const [activeTab, setActiveTab] = useState('HOME');
     const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('HOME');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [manualCode, setManualCode] = useState('');
-    const [manualEventId, setManualEventId] = useState('');
-    // Scanner State & Refs
-    const [isScanning, setIsScanning] = useState(false);
     const [scanResult, setScanResult] = useState(null);
-    const [isDetected, setIsDetected] = useState(false); // Visual feedback for detection
-    const [isSubmitting, setIsSubmitting] = useState(false); // Lock for API calls
-    const videoRef = useRef(null);
-    const requestRef = useRef(null);
-    const lastCodeRef = useRef(null);
-    const lastTimeRef = useRef(0);
-    const stabilityTimerRef = useRef(null);
-    const cleanupRef = useRef(null);
-    const isSubmittingRef = useRef(false); // Sync lock
 
+    // UI Navigation helper
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 5000);
-        return () => {
-            clearInterval(interval);
-            if (cleanupRef.current) cleanupRef.current();
-        };
     }, []);
-
-    useEffect(() => {
-        if (activeEvent) {
-            setManualEventId(activeEvent.id);
-        }
-    }, [activeEvent]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const eventsRes = await api.get('/events?active=true');
-            const now = new Date();
-            const currentEvent = eventsRes.data.find(e => {
-                const start = new Date(`${e.date}T${e.start_time}`);
-                const end = new Date(`${e.date}T${e.end_time}`);
-                return now >= start && now <= end;
-            });
-            setActiveEvent(currentEvent || null);
-
+            // Simplified fetch just for status / history
             const allocationRes = await api.get('/student/my-allocation');
             if (allocationRes.data.status !== 'NO_ACTIVE_ASSESSMENT') {
                 setActiveAssessment({
@@ -68,18 +35,12 @@ export default function StudentDashboard() {
                     end_time: allocationRes.data.end_time || '23:59',
                     status: 'LIVE'
                 });
-
                 if (allocationRes.data.status === 'ALLOCATED') {
                     setMyAllocation({
                         lab_name: allocationRes.data.lab_name,
                         seat_number: allocationRes.data.seat_number
                     });
-                } else {
-                    setMyAllocation(null);
                 }
-            } else {
-                setActiveAssessment(null);
-                setMyAllocation(null);
             }
 
             const historyRes = await api.get('/attendance/my-history');
@@ -92,566 +53,61 @@ export default function StudentDashboard() {
         }
     };
 
-    const startScanner = async () => {
-        setScanResult(null);
-        setIsScanning(true);
-        setIsDetected(false);
-        setIsScanning(true);
-        setIsDetected(false);
-        setActiveTab('HOME');
-
-        // Cleanup any existing streams
-        if (cleanupRef.current) cleanupRef.current();
-
-        const constraints = {
-            video: {
-                facingMode: "environment",
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            }
-        };
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-            // Setup Video Element (Hidden or Visible depending on UI requirement - we hijack the reader div)
-            const readerDiv = document.getElementById("reader");
-            if (!readerDiv) return;
-
-            readerDiv.innerHTML = ''; // Clear existing
-            const video = document.createElement("video");
-            video.style.width = "100%";
-            video.style.height = "100%";
-            video.style.objectFit = "cover";
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = true;
-            readerDiv.appendChild(video);
-
-            video.srcObject = stream;
-            videoRef.current = video;
-
-            // Wait for video to actually start playing to know dimensions
-            await new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    video.play().then(resolve);
-                };
-            });
-
-            // Fallback scanner instance
-            let html5QrCodeFallback = null;
-            if (!("BarcodeDetector" in window)) {
-                console.log("BarcodeDetector not supported, initializing fallback.");
-                // Create a hidden container for the library if it doesn't exist
-                if (!document.getElementById("reader-fallback")) {
-                    const div = document.createElement("div");
-                    div.id = "reader-fallback";
-                    div.style.display = "none";
-                    document.body.appendChild(div);
-                }
-                html5QrCodeFallback = new Html5Qrcode("reader-fallback");
-            }
-
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-            let frameCount = 0;
-
-            const scanLoop = async () => {
-                if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) {
-                    return; // Stop loop if video stopped
-                }
-
-                frameCount++;
-
-                // 1. Setup Crop & Scale
-                // We want to crop the center ~25% and scale it up 3x
-                const vWidth = videoRef.current.videoWidth;
-                const vHeight = videoRef.current.videoHeight;
-
-                // Crop dimensions (Increased to 80% for long-distance scanning)
-                const cropWidth = Math.floor(vWidth * 0.80);
-                const cropHeight = Math.floor(vHeight * 0.80);
-                const startX = (vWidth - cropWidth) / 2;
-                const startY = (vHeight - cropHeight) / 2;
-
-                // Scale up (3x)
-                const scaleFactor = 3;
-                canvas.width = cropWidth * scaleFactor;
-                canvas.height = cropHeight * scaleFactor;
-
-                // Draw scaled crop to canvas
-                ctx.drawImage(
-                    videoRef.current,
-                    startX, startY, cropWidth, cropHeight, // Source crop
-                    0, 0, canvas.width, canvas.height // Dest scaled
-                );
-
-                // 2. Detect & Validate
-                let detectedCode = null;
-                let validationStatus = 'NONE'; // NONE, VALID, INVALID
-
-                try {
-                    if ("BarcodeDetector" in window) {
-                        const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
-                        const barcodes = await barcodeDetector.detect(canvas);
-
-                        if (barcodes.length > 0) {
-                            const code = barcodes[0];
-                            const corners = code.cornerPoints;
-
-                            // Draw Dynamic Bounding Box
-                            if (corners && corners.length === 4) {
-                                ctx.beginPath();
-                                ctx.moveTo(corners[0].x, corners[0].y);
-                                ctx.lineTo(corners[1].x, corners[1].y);
-                                ctx.lineTo(corners[2].x, corners[2].y);
-                                ctx.lineTo(corners[3].x, corners[3].y);
-                                ctx.closePath();
-
-                                // Validation Logic [REMOVED] - Accept All
-                                ctx.strokeStyle = '#4ade80'; // Always Green
-                                ctx.lineWidth = 4;
-                                ctx.stroke();
-
-                                // Pulse effect for valid code
-                                ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
-                                ctx.fill();
-
-                                detectedCode = code.rawValue;
-                                validationStatus = 'VALID';
-                            } else {
-                                // Fallback if no corners (rare)
-                                detectedCode = code.rawValue;
-                                validationStatus = 'VALID';
-                            }
-                        }
-                    } else if (html5QrCodeFallback && frameCount % 10 === 0) {
-                        // Fallback logic remains simple (no sophisticated gfx)
-                        try {
-                            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-                            if (blob) {
-                                const result = await html5QrCodeFallback.scanFileV2(blob, false);
-                                if (result) {
-                                    detectedCode = result;
-                                    validationStatus = 'VALID';
-                                }
-                            }
-                        } catch (err) { }
-                    }
-                } catch (e) {
-                    console.error("Detection error:", e);
-                }
-
-
-                // 3. Stability Check (Debounce)
-                if (validationStatus === 'VALID' && detectedCode) {
-                    setIsDetected(true); // Visual feedback
-
-                    const now = Date.now();
-
-                    if (detectedCode === lastCodeRef.current) {
-                        // Check if it's been stable for enough time
-                        if (now - lastTimeRef.current > 400) { // 400ms stability
-                            // STOP scanning immediately
-                            stopScanner();
-                            if (navigator.vibrate) navigator.vibrate([100]); // Success pulse
-                            handleScan(detectedCode);
-                            return; // Exit loop
-                        }
-                    } else {
-                        // New code found, reset timer
-                        lastCodeRef.current = detectedCode;
-                        lastTimeRef.current = now;
-                    }
-                } else {
-                    // Lost code or Invalid
-                    setIsDetected(false);
-                    if (Date.now() - lastTimeRef.current > 200) {
-                        lastCodeRef.current = null;
-                    }
-                }
-
-                requestRef.current = requestAnimationFrame(scanLoop);
-            };
-
-            requestRef.current = requestAnimationFrame(scanLoop);
-
-            cleanupRef.current = () => {
-                if (requestRef.current) cancelAnimationFrame(requestRef.current);
-                if (video.srcObject) {
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                }
-                if (readerDiv) readerDiv.innerHTML = '';
-            };
-
-        } catch (err) {
-            console.error("Camera Error", err);
-            setIsScanning(false);
-            alert("Could not start camera. Please ensure permissions are granted.");
-        }
-    };
-
-    const stopScanner = () => {
-        setIsScanning(false);
-
-        if (cleanupRef.current) {
-            cleanupRef.current();
-            cleanupRef.current = null;
-        }
-        if (requestRef.current) {
-            cancelAnimationFrame(requestRef.current);
-            requestRef.current = null;
-        }
-    };
-
-    const handleScan = async (qrData) => {
-        // PREVENT DOUBLE SUBMISSION
-        if (isSubmittingRef.current) return;
-        isSubmittingRef.current = true;
-        setIsSubmitting(true);
-
-        try {
-            if (navigator.vibrate) navigator.vibrate(200);
-
-            let eventId, token;
-
-            // Strategy 1: Smart Regex (Works for URLs, deep links, and query strings)
-            // Looks for event_id=... and token=... anywhere in the string
-            const eventIdMatch = qrData.match(/[?&]event_id=([^&]+)/);
-            const tokenMatch = qrData.match(/[?&]token=([^&]+)/);
-
-            if (eventIdMatch && tokenMatch) {
-                eventId = eventIdMatch[1];
-                token = tokenMatch[1];
-            }
-            // Strategy 2: Legacy Format (EVENT:123:456)
-            else if (qrData.startsWith('EVENT')) {
-                const parts = qrData.split(':');
-                if (parts.length === 3) {
-                    eventId = parts[1];
-                    token = parts[2];
-                }
-            }
-
-            if (!eventId || !token) {
-                throw new Error("Invalid QR Code format. Please scan a valid attendance QR code.");
-            }
-
-            await api.post('/attendance', { event_id: eventId, token });
-
-            setScanResult({ status: 'success', title: 'Marked Present!', message: 'Your attendance has been recorded.' });
-            fetchData();
-
-        } catch (error) {
-            const msg = error.response?.data?.error || error.message || 'Scan failed';
-
-            // If it's a duplicate attendance error, show success instead of error (better UX)
-            if (msg.includes('already marked')) {
-                setScanResult({ status: 'success', title: 'Already Present', message: 'You have already marked attendance for this event.' });
-            } else {
-                setScanResult({ status: 'error', title: 'Attendance Failed', message: msg });
-            }
-        } finally {
-            // Release lock after short delay to prevent bounce
-            setTimeout(() => {
-                isSubmittingRef.current = false;
-                setIsSubmitting(false);
-            }, 2000);
-        }
-    };
-
-    const handleManualSubmit = async (e) => {
-        e.preventDefault();
-        if (!manualCode || manualCode.length < 6) {
-            alert('Please enter a valid 6-digit code');
-            return;
-        }
-
-        if (isSubmittingRef.current) return;
-        isSubmittingRef.current = true;
-        setIsSubmitting(true);
-
-        const targetEventId = manualEventId || activeEvent?.id;
-
-        if (!targetEventId) {
-            alert("Please enter the Event ID.");
-            // Release lock immediately if no event ID
-            isSubmittingRef.current = false;
-            setIsSubmitting(false);
-            return;
-        }
-
-        try {
-            if (navigator.vibrate) navigator.vibrate(200);
-            await api.post('/attendance', { event_id: targetEventId, token: manualCode });
-            setScanResult({ status: 'success', title: 'Marked Present!', message: 'Manual entry successful.' });
-            setManualCode('');
-            fetchData();
-            // setShowManualFallback(false); // Hide manual fallback on success (removed)
-        } catch (error) {
-            const msg = error.response?.data?.error || error.message || 'Entry failed';
-            alert(msg);
-        } finally {
-            setTimeout(() => {
-                isSubmittingRef.current = false;
-                setIsSubmitting(false);
-            }, 1000);
-        }
-    };
-
-    const isMarkedPresent = activeEvent && history.find(h => h.event_id === activeEvent.id);
+    // Render Helpers
+    const isMarkedPresent = false; // logic moved or simplified? 
+    // Actually, we can check history for today's event if we want to show status on the dashboard still.
+    // But since we removed activeEvent detailed polling here to simplify, let's just keep history.
 
     const renderHome = () => (
         <div style={{ padding: '1.5rem', paddingBottom: '7rem', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-            {/* Mark Attendance Card */}
-            <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', border: '1px solid #f1f5f9' }}>
-                {isMarkedPresent ? (
-                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+            {/* Dashboard Actions */}
+            <div style={{ padding: '1.5rem', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+                {/* Placements Card */}
+                <Link to="/student/placements" style={{ textDecoration: 'none' }}>
+                    <div style={{
+                        background: 'white', padding: '1.5rem', borderRadius: '24px', border: '1px solid #e2e8f0',
+                        display: 'flex', alignItems: 'center', gap: '1.5rem',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                        transition: 'transform 0.2s'
+                    }}>
                         <div style={{
-                            width: '80px', height: '80px', background: '#dcfce7', borderRadius: '50%',
-                            color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            margin: '0 auto 1.5rem auto'
+                            background: '#f0f9ff', width: '56px', height: '56px', borderRadius: '16px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7'
                         }}>
-                            <ClipboardList size={40} />
+                            <Briefcase size={28} strokeWidth={2.5} />
                         </div>
-                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', fontWeight: '700', color: '#166534' }}>Attendance Marked</h3>
-                        <p style={{ margin: '0.5rem 0 0', color: '#15803d', fontSize: '0.9rem' }}>
-                            Recorded at {new Date(isMarkedPresent.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#0f172a' }}>Placement Drives</h3>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#64748b' }}>View and apply for opportunities</p>
+                        </div>
+                        <ArrowRight size={20} color="#cbd5e1" />
                     </div>
-                ) : isScanning ? (
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>Scanning QR Code</h3>
-                            <button
-                                onClick={stopScanner}
-                                style={{
-                                    background: '#f1f5f9',
-                                    border: 'none',
-                                    padding: '0.5rem',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                            >
-                                <X size={20} color="#64748b" />
-                            </button>
+                </Link>
+
+                {/* Mark Attendance Card */}
+                <Link to="/student/attendance" style={{ textDecoration: 'none' }}>
+                    <div style={{
+                        background: 'white', padding: '1.5rem', borderRadius: '24px', border: '1px solid #e2e8f0',
+                        display: 'flex', alignItems: 'center', gap: '1.5rem',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                        transition: 'transform 0.2s'
+                    }}>
+                        <div style={{
+                            background: '#fdf4ff', width: '56px', height: '56px', borderRadius: '16px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c026d3'
+                        }}>
+                            <QrCode size={28} strokeWidth={2.5} />
                         </div>
-
-                        <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '400px', background: '#000' }}>
-                            <div id="reader" style={{ width: '100%', height: '100%' }}></div>
-
-                            {/* Dark Overlay & Scan Box */}
-                            <div style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                pointerEvents: 'none'
-                            }}>
-
-                                {/* Scan Box Area */}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    width: '70%',
-                                    maxWidth: '300px',
-                                    aspectRatio: '1/1',
-                                    zIndex: 10
-                                }}>
-                                    {/* Dark Overlay (Outside Box) */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        inset: -1000,
-                                        background: 'rgba(0, 0, 0, 0.6)',
-                                        mask: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
-                                        maskComposite: 'exclude',
-                                        WebkitMask: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
-                                        WebkitMaskComposite: 'xor',
-                                        padding: '1px', // Border width hack for mask
-                                        borderRadius: '24px',
-                                        pointerEvents: 'none'
-                                    }}></div>
-
-                                    {/* Active Border & Laser */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        border: isDetected ? '4px solid #4ade80' : '2px solid rgba(255, 255, 255, 0.5)',
-                                        borderRadius: '24px',
-                                        boxShadow: isDetected ? '0 0 30px rgba(74, 222, 128, 0.5)' : 'none',
-                                        transition: 'all 0.3s ease',
-                                        overflow: 'hidden',
-                                        animation: isDetected ? 'none' : 'pulseGlow 3s infinite'
-                                    }}>
-                                        {/* Corner Markers (Visual flair) */}
-                                        {!isDetected && (
-                                            <>
-                                                <div style={{ position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderTop: '4px solid white', borderLeft: '4px solid white', borderRadius: '6px 0 0 0' }} />
-                                                <div style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderTop: '4px solid white', borderRight: '4px solid white', borderRadius: '0 6px 0 0' }} />
-                                                <div style={{ position: 'absolute', bottom: -2, left: -2, width: 20, height: 20, borderBottom: '4px solid white', borderLeft: '4px solid white', borderRadius: '0 0 0 6px' }} />
-                                                <div style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderBottom: '4px solid white', borderRight: '4px solid white', borderRadius: '0 0 6px 0' }} />
-                                            </>
-                                        )}
-
-                                        {/* Scanner Laser Animation [REMOVED] */}
-
-                                    </div>
-                                </div>
-
-
-                                {/* CSS for Animations */}
-                                <style>{`
-                                    @keyframes pulseGlow {
-                                        0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); border-color: rgba(74, 222, 128, 0.6); }
-                                        70% { box-shadow: 0 0 20px 0 rgba(74, 222, 128, 0.0); border-color: rgba(74, 222, 128, 0.3); }
-                                        100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.0); border-color: rgba(74, 222, 128, 0.6); }
-                                    }
-                                    @keyframes breathe {
-                                        0% { opacity: 0.3; transform: scale(0.98); }
-                                        50% { opacity: 0.6; transform: scale(1.0); }
-                                        100% { opacity: 0.3; transform: scale(0.98); }
-                                    }
-                                `}</style>
-                            </div>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#0f172a' }}>Mark Attendance</h3>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#64748b' }}>Scan QR or enter code manually</p>
                         </div>
+                        <ArrowRight size={20} color="#cbd5e1" />
                     </div>
+                </Link>
 
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.025em' }}>Mark Attendance</h2>
-                            {activeEvent && (
-                                <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: '700', background: '#dcfce7', padding: '6px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>LIVE</span>
-                            )}
-                        </div>
-
-                        {/* Primary Action: Scan QR Code */}
-                        <button
-                            onClick={startScanner}
-                            style={{
-                                width: '100%',
-                                padding: '1.25rem',
-                                borderRadius: '12px',
-                                background: '#4c1d95',
-                                color: 'white',
-                                fontWeight: '700',
-                                fontSize: '1rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.75rem',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)',
-                                border: 'none',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                            <ScanLine size={24} /> Scan QR Code
-                        </button>
-
-                        {/* Divider */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }}></div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8' }}>OR</span>
-                            <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }}></div>
-                        </div>
-
-                        {/* Manual Entry Section */}
-                        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b' }}>MANUAL ENTRY</span>
-                            </div>
-
-                            <form onSubmit={handleManualSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {/* Side by side inputs */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>EVENT ID</label>
-                                        <input
-                                            type="text"
-                                            value={manualEventId}
-                                            onChange={(e) => setManualEventId(e.target.value)}
-                                            placeholder="000"
-                                            disabled={!!activeEvent}
-                                            style={{
-                                                width: '100%',
-                                                padding: '0.875rem 1rem',
-                                                borderRadius: '12px',
-                                                border: 'none',
-                                                fontSize: '1rem',
-                                                outline: 'none',
-                                                background: activeEvent ? '#e2e8f0' : 'white',
-                                                color: '#0f172a',
-                                                fontWeight: '600',
-                                                textAlign: 'center'
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>CODE</label>
-                                        <input
-                                            type="text"
-                                            value={manualCode}
-                                            onChange={(e) => setManualCode(e.target.value)}
-                                            placeholder="XXXXXX"
-                                            maxLength={6}
-                                            style={{
-                                                width: '100%',
-                                                padding: '0.875rem 1rem',
-                                                borderRadius: '12px',
-                                                border: 'none',
-                                                fontSize: '1rem',
-                                                outline: 'none',
-                                                background: 'white',
-                                                color: '#0f172a',
-                                                textAlign: 'center',
-                                                fontWeight: '700',
-                                                letterSpacing: '0.15em',
-                                                textTransform: 'uppercase'
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Submit Button */}
-                                <button
-                                    type="submit"
-                                    disabled={!manualCode.trim()}
-                                    style={{
-                                        width: '100%',
-                                        padding: '0.875rem',
-                                        borderRadius: '12px',
-                                        background: manualCode.trim() ? '#0f172a' : '#e2e8f0',
-                                        border: 'none',
-                                        color: manualCode.trim() ? 'white' : '#94a3b8',
-                                        fontWeight: '600',
-                                        cursor: manualCode.trim() ? 'pointer' : 'not-allowed',
-                                        fontSize: '0.95rem',
-                                        transition: 'all 0.2s',
-                                        opacity: manualCode.trim() ? 1 : 0.6
-                                    }}
-                                >
-                                    Mark Attendance
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Today's Assessment Card */}
@@ -945,12 +401,8 @@ export default function StudentDashboard() {
                     <span style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Home</span>
                 </button>
 
-                <button
-                    onClick={() => {
-                        setActiveTab('HOME');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        if (!isMarkedPresent) startScanner();
-                    }}
+                <Link
+                    to="/student/attendance"
                     style={{
                         background: 'none',
                         border: 'none',
@@ -961,7 +413,8 @@ export default function StudentDashboard() {
                         flex: 1,
                         padding: '8px 0',
                         transform: 'translateY(-16px)',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        textDecoration: 'none'
                     }}
                 >
                     <div style={{
@@ -977,7 +430,7 @@ export default function StudentDashboard() {
                     }}>
                         <QrCode size={32} />
                     </div>
-                </button>
+                </Link>
 
                 <button
                     onClick={() => setActiveTab('HISTORY')}

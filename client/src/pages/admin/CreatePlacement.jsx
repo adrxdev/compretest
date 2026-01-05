@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Save, X } from 'lucide-react';
 
 export default function CreatePlacement() {
     const { token } = useAuth();
     const navigate = useNavigate();
+    const { id } = useParams(); // Check if editing
     const [submitting, setSubmitting] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         company_name: '',
@@ -17,15 +19,82 @@ export default function CreatePlacement() {
         description: '',
         deadline: '',
         min_cgpa: 0,
-        allowed_branches: [], // Will verify if backend supports open by empty, for now UI handles basic input
+        allowed_branches: [],
+        industry: '',
+        location: '',
+        about_company: '',
+        selection_process: '',
+        bond_details: ''
     });
 
-    const [branches, setBranches] = useState([]); // Simple text input for now or multi-select could be complex
-    // Let's use a simpler approach for branches: pre-defined checkboxes for common branches
-    const availableBranches = ['CSE', 'IT', 'AI', 'ENTC', 'MECH', 'CIVIL'];
-    const availableYears = [1, 2, 3, 4];
+    const [availableBranches] = useState(['CSE', 'IT', 'AI', 'ENTC', 'MECH', 'CIVIL']);
+    const [availableYears] = useState([1, 2, 3, 4]);
     const [selectedYears, setSelectedYears] = useState([]);
     const [selectedBranches, setSelectedBranches] = useState([]);
+
+    useEffect(() => {
+        if (id) {
+            fetchDriveDetails();
+        }
+    }, [id]);
+
+    const fetchDriveDetails = async () => {
+        setLoading(true);
+        try {
+            // Reusing the public API (which includes eligibility in response logic?)
+            // Wait, getAllDrives returns simple object. 
+            // We need `getDriveById` exposed via API?
+            // Currently `getAllDrives` is exposed. `getDriveById` logic exists in Model but Controller doesn't explicity expose a "Get Single" endpoint for Admin?
+            // Ah, we might need that.
+            // Let's assume we can fetch all and find it, or better: implement GET /:id.
+            // Wait, I implemented DELETE /:id and PUT /:id but did I implement GET /:id?
+            // Checking routes... NO. Only GET /drives (all).
+            // Quick fix: Fetch list and filter client side (easier for now).
+            // Or better: Add GET /:id.
+            // Given I am modifying this file now, I'll try filtering client side first if list is small.
+            // But API `/drives` is public/student filtered? Admin gets raw.
+            // Yes, "If Admin, return raw drives".
+
+            const response = await fetch('/api/placement/drives', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            const drive = data.find(d => d.id == id); // Loose equality string/int
+
+            if (drive) {
+                // Populate Form
+                setFormData({
+                    company_name: drive.company_name,
+                    role: drive.role,
+                    job_type: drive.job_type,
+                    stipend_ctc: drive.stipend_ctc || '',
+                    description: drive.description || '',
+                    deadline: drive.deadline ? new Date(drive.deadline).toISOString().slice(0, 16) : '',
+                    min_cgpa: drive.min_cgpa || 0,
+                    industry: drive.industry || '',
+                    location: drive.location || '',
+                    about_company: drive.about_company || '',
+                    selection_process: drive.selection_process || '',
+                    bond_details: drive.bond_details || '',
+                    allowed_branches: [], // Api returns matched? 'min_cgpa', 'allowed_branches' joined?
+                    // In getAllDrives model: "SELECT pd.*, er.min_cgpa..."
+                    // Yes, they are in the root object.
+                });
+                // Handle Arrays (Postgres Arrays come as arrays in JSON)
+                if (drive.allowed_branches) setSelectedBranches(drive.allowed_branches);
+                if (drive.allowed_years) setSelectedYears(drive.allowed_years);
+            } else {
+                alert("Drive not found!");
+                navigate('/admin/placements');
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load drive details");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -41,8 +110,11 @@ export default function CreatePlacement() {
                 }
             };
 
-            const response = await fetch('/api/placement/admin/drives', {
-                method: 'POST',
+            const url = id ? `/api/placement/admin/drives/${id}` : '/api/placement/admin/drives';
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -52,7 +124,7 @@ export default function CreatePlacement() {
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error || 'Failed to create drive');
+                throw new Error(err.error || 'Operation failed');
             }
 
             navigate('/admin/placements');
@@ -76,8 +148,10 @@ export default function CreatePlacement() {
         );
     };
 
+    if (loading) return <div style={{ padding: '2rem' }}>Loading...</div>;
+
     return (
-        <AdminLayout title="Create New Drive">
+        <AdminLayout title={id ? "Edit Drive" : "Create New Drive"}>
             <form onSubmit={handleSubmit} style={{ maxWidth: '800px' }}>
 
                 {/* Section 1: Job Details */}
@@ -110,6 +184,29 @@ export default function CreatePlacement() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Industry</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Fintech, EdTech, SaaS"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                            value={formData.industry}
+                            onChange={e => setFormData({ ...formData, industry: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Location</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Bangalore, Remote"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                            value={formData.location}
+                            onChange={e => setFormData({ ...formData, location: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Job Type</label>
                         <select
                             style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
@@ -133,13 +230,47 @@ export default function CreatePlacement() {
                 </div>
 
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Description</label>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Job Description</label>
                     <textarea
                         rows={4}
                         style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }}
                         value={formData.description}
                         onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>About Company</label>
+                    <textarea
+                        rows={3}
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                        value={formData.about_company}
+                        onChange={e => setFormData({ ...formData, about_company: e.target.value })}
+                        placeholder="Brief description about the organization..."
+                    />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Selection Process</label>
+                        <textarea
+                            rows={4}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                            value={formData.selection_process}
+                            onChange={e => setFormData({ ...formData, selection_process: e.target.value })}
+                            placeholder="e.g. 1. Aptitude Test..."
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Bond / Other Details</label>
+                        <textarea
+                            rows={4}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                            value={formData.bond_details}
+                            onChange={e => setFormData({ ...formData, bond_details: e.target.value })}
+                            placeholder="e.g. 2 Years Service Bond..."
+                        />
+                    </div>
                 </div>
 
                 <div style={{ marginBottom: '2rem' }}>
@@ -244,7 +375,7 @@ export default function CreatePlacement() {
                         }}
                     >
                         <Save size={20} />
-                        {submitting ? 'Creating...' : 'Create Drive'}
+                        {submitting ? 'Saving...' : id ? 'Update Drive' : 'Create Drive'}
                     </button>
                 </div>
 
