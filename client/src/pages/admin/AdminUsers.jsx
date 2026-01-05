@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Search, Filter, Edit2, Ban, CheckCircle } from 'lucide-react';
+import { Search, Filter, Edit2, Ban, CheckCircle, Plus } from 'lucide-react';
+import AddStudentModal from '../../components/admin/AddStudentModal';
 
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
@@ -9,18 +10,20 @@ export default function AdminUsers() {
     const [searchTerm, setSearchTerm] = useState('');
     const [yearFilter, setYearFilter] = useState('ALL'); // ALL, 3, 4
     const [editUser, setEditUser] = useState(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+
+    const fetchUsers = async () => {
+        try {
+            const res = await api.get('/users');
+            setUsers(res.data);
+            setLoading(false);
+        } catch (error) {
+            console.error('Failed to fetch users', error);
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const res = await api.get('/users');
-                setUsers(res.data);
-                setLoading(false);
-            } catch (error) {
-                console.error('Failed to fetch users', error);
-                setLoading(false);
-            }
-        };
         fetchUsers();
     }, []);
 
@@ -72,8 +75,33 @@ export default function AdminUsers() {
         return matchesSearch && matchesYear;
     });
 
+    const headerActions = (
+        <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+                background: '#4f46e5',
+                color: 'white',
+                border: 'none',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '10px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+            <Plus size={18} /> Add Student
+        </button>
+    );
+
     return (
-        <AdminLayout title="User Management">
+        <AdminLayout title="User Management" actions={headerActions}>
 
             {/* Controls */}
             <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -119,6 +147,8 @@ export default function AdminUsers() {
                     ))}
                 </div>
             </div>
+
+
 
             {/* Table */}
             <div style={{ overflowX: 'auto' }}>
@@ -196,64 +226,79 @@ export default function AdminUsers() {
             </div>
 
             {/* Edit Modal */}
-            {editUser && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-                    backdropFilter: 'blur(4px)'
-                }}>
-                    <div style={{ background: 'white', width: '90%', maxWidth: '500px', padding: '2rem', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-                        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#0f172a', fontSize: '1.5rem' }}>Edit User</h2>
-                        <form onSubmit={handleSaveUser}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Name</label>
-                                <input
-                                    value={editUser.name}
-                                    onChange={e => setEditUser({ ...editUser, name: e.target.value })}
-                                    required
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Enrollment Number</label>
-                                <input
-                                    value={editUser.enrollment_no || ''}
-                                    onChange={e => setEditUser({ ...editUser, enrollment_no: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
-                                />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Branch</label>
+            {
+                editUser && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                        backdropFilter: 'blur(4px)'
+                    }}>
+                        <div style={{ background: 'white', width: '90%', maxWidth: '500px', padding: '2rem', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+                            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#0f172a', fontSize: '1.5rem' }}>Edit User</h2>
+                            <form onSubmit={handleSaveUser}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Name</label>
                                     <input
-                                        value={editUser.branch || ''}
-                                        onChange={e => setEditUser({ ...editUser, branch: e.target.value })}
-                                        placeholder="e.g. CSE"
+                                        value={editUser.name}
+                                        onChange={e => setEditUser({ ...editUser, name: e.target.value })}
+                                        required
                                         style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Academic Year</label>
-                                    <select
-                                        value={editUser.academic_year || ''}
-                                        onChange={e => setEditUser({ ...editUser, academic_year: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: 'white' }}
-                                    >
-                                        <option value="">Select Year</option>
-                                        <option value="3">3rd Year</option>
-                                        <option value="4">Final Year</option>
-                                    </select>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Enrollment Number</label>
+                                    <input
+                                        value={editUser.enrollment_no || ''}
+                                        onChange={e => setEditUser({ ...editUser, enrollment_no: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                                    />
                                 </div>
-                            </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Branch</label>
+                                        <input
+                                            value={editUser.branch || ''}
+                                            onChange={e => setEditUser({ ...editUser, branch: e.target.value })}
+                                            placeholder="e.g. CSE"
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Academic Year</label>
+                                        <select
+                                            value={editUser.academic_year || ''}
+                                            onChange={e => setEditUser({ ...editUser, academic_year: e.target.value })}
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: 'white' }}
+                                        >
+                                            <option value="">Select Year</option>
+                                            <option value="3">3rd Year</option>
+                                            <option value="4">Final Year</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button type="button" onClick={() => setEditUser(null)} style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                                <button type="submit" style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)' }}>Save Changes</button>
-                            </div>
-                        </form>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                    <button type="button" onClick={() => setEditUser(null)} style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                                    <button type="submit" style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)' }}>Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </AdminLayout>
+                )
+            }
+
+            {/* Add Student Modal */}
+            {
+                showAddModal && (
+                    <AddStudentModal
+                        onClose={() => setShowAddModal(false)}
+                        onSuccess={() => {
+                            setShowAddModal(false);
+                            fetchUsers();
+                        }}
+                    />
+                )
+            }
+        </AdminLayout >
     );
 }

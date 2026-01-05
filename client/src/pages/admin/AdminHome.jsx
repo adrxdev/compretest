@@ -9,6 +9,21 @@ export default function AdminHome() {
 
     return (
         <AdminLayout title="Dashboard">
+            <style>
+                {`
+                    .quick-actions-grid {
+                        display: grid;
+                        grid-template-columns: 1fr;
+                        gap: 1.5rem;
+                    }
+                    @media (min-width: 1024px) {
+                        .quick-actions-grid {
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 1.5rem;
+                        }
+                    }
+                `}
+            </style>
             <div style={{ padding: '1rem' }}>
 
                 {/* Profile Welcome Section */}
@@ -41,7 +56,7 @@ export default function AdminHome() {
 
                 <div style={{ marginBottom: '1.5rem', fontSize: '1.2rem', fontWeight: '700', color: '#334155' }}>Quick Actions</div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                <div className="quick-actions-grid">
 
                     {/* Placements Card */}
                     <Link to="/admin/placements" style={{ textDecoration: 'none' }}>

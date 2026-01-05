@@ -4,7 +4,9 @@ const userController = require('../controllers/user.controller');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 
 // Note: create user might be admin only?
-// router.post('/', userController.create); // TEMP: Commented out to fix crash, create method missing
+// Create User (Admin Only)
+router.post('/create', authenticateToken, userController.createUser);
+router.post('/create-bulk', authenticateToken, userController.createBulkUsers);
 
 router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, userController.updateProfile);

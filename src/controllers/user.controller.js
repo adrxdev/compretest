@@ -3,6 +3,82 @@ const db = require('../config/db');
 
 const jwt = require('jsonwebtoken');
 
+
+const createUser = async (req, res) => {
+    try {
+        const { name, email, enrollment_no, branch, academic_year } = req.body;
+
+        // Basic Validation
+        if (!name || !email || !enrollment_no) {
+            return res.status(400).json({ error: 'Name, Email, and Enrollment Number are required' });
+        }
+
+        // Check for existing user by email or enrollment
+        // We can let the DB unique constraint handle it, but a check is nicer.
+        // For now, try insert and catch error.
+
+        const newUser = await userModel.createUser({
+            name, email, enrollment_no, branch, role: 'student', academic_year
+        });
+
+        res.json(newUser);
+
+    } catch (error) {
+        console.error('Create User Error:', error);
+        if (error.code === '23505') { // Postgres Unique Violation
+            return res.status(409).json({ error: 'User with this Email or Enrollment already exists' });
+        }
+        res.status(500).json({ error: 'Failed to create user' });
+    }
+};
+
+const createBulkUsers = async (req, res) => {
+    try {
+        const { users } = req.body; // Expect array of user objects
+        if (!Array.isArray(users) || users.length === 0) {
+            return res.status(400).json({ error: 'Invalid user list provided' });
+        }
+
+        const results = {
+            success: 0,
+            failed: 0,
+            errors: []
+        };
+
+        // TODO: Use a bulk insert query for performance, but loop is safer for individual errors for now.
+        for (const user of users) {
+            try {
+                // Ensure required fields
+                if (!user.name || !user.email || !user.enrollment_no) {
+                    results.failed++;
+                    results.errors.push({ enrollment: user.enrollment_no, error: 'Missing Required Fields' });
+                    continue;
+                }
+
+                await userModel.createUser({
+                    name: user.name,
+                    email: user.email,
+                    enrollment_no: user.enrollment_no,
+                    branch: user.branch || '',
+                    role: 'student',
+                    academic_year: user.academic_year || null
+                });
+                results.success++;
+            } catch (err) {
+                console.error('Bulk Insert Error for', user.email, err.message);
+                results.failed++;
+                results.errors.push({ enrollment: user.enrollment_no, error: err.code === '23505' ? 'Duplicate' : err.message });
+            }
+        }
+
+        res.json({ message: 'Bulk processing complete', ...results });
+
+    } catch (error) {
+        console.error('Bulk Create Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -98,5 +174,7 @@ module.exports = {
     updateProfile,
     getProfile,
     getAllUsers,
-    adminUpdateUser
+    adminUpdateUser,
+    createUser,
+    createBulkUsers
 };
