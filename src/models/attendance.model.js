@@ -130,6 +130,22 @@ const findAllLogs = async () => {
   return rows;
 };
 
+const getProxyAttemptsByEvent = async (event_id) => {
+  const query = `
+    SELECT 
+      users.name,
+      users.enrollment_no, 
+      attendance_logs.scan_time,
+      attendance_logs.device_hash
+    FROM attendance_logs
+    JOIN users ON attendance_logs.user_id = users.id
+    WHERE attendance_logs.event_id = $1 AND attendance_logs.status = 'PROXY_REJECTED'
+    ORDER BY attendance_logs.scan_time DESC;
+  `;
+  const { rows } = await db.query(query, [event_id]);
+  return rows;
+};
+
 module.exports = {
   logAttendance,
   checkDeviceUsed,
