@@ -45,10 +45,24 @@ const adminUpdate = async (id, { name, enrollment_no, branch, academic_year, use
   return rows[0];
 };
 
+const findAdmins = async () => {
+  const query = "SELECT id, name, email, role, user_status, created_at FROM users WHERE role = 'admin' ORDER BY created_at DESC";
+  const { rows } = await db.query(query);
+  return rows;
+};
+
+const toggleUserStatus = async (id, status) => {
+  const query = 'UPDATE users SET user_status = $1 WHERE id = $2 RETURNING *';
+  const { rows } = await db.query(query, [status, id]);
+  return rows[0];
+};
+
 module.exports = {
   createUser,
   findById,
   updateUser,
   findAll,
-  adminUpdate
+  adminUpdate,
+  findAdmins,
+  toggleUserStatus
 };

@@ -28,6 +28,8 @@ import AdminReports from './pages/admin/AdminReports';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminPlacements from './pages/admin/AdminPlacements';
 import CreatePlacement from './pages/admin/CreatePlacement';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminManagement from './pages/admin/AdminManagement';
 
 import ProfileSetup from './pages/ProfileSetup';
 
@@ -95,6 +97,8 @@ function App() {
               <Route path="labs" element={<AdminLabs />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="profile" element={<AdminProfile />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="manage-admins" element={<AdminManagement />} />
             </Route>
 
             {/* Projector View (Standalone Layout) */}

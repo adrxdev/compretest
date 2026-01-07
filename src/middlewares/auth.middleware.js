@@ -23,7 +23,18 @@ const authorizeRole = (allowedRoles) => {
     };
 };
 
+const verifySuperAdmin = (req, res, next) => {
+    // Hardcoded Super Admin for v1
+    const SUPER_ADMIN_EMAIL = 'pranavvgawai@gmail.com';
+
+    if (!req.user || req.user.email !== SUPER_ADMIN_EMAIL) {
+        return res.status(403).json({ error: 'Access denied: Super Admin only' });
+    }
+    next();
+};
+
 module.exports = {
     authenticateToken,
-    authorizeRole
+    authorizeRole,
+    verifySuperAdmin
 };

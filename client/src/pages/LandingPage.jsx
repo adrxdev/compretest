@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Smartphone, ShieldCheck, BarChart3, MapPin } from 'lucide-react';
+import { ArrowRight, Smartphone, ShieldCheck, BarChart3, MapPin, Menu, X, ChevronDown, Mail } from 'lucide-react';
 import './LandingPage.css';
 import mitLogo from '../assets/mitadtlogo.png';
 import heroVideo from '../assets/itbuilding.mp4';
 
 const LandingPage = () => {
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [openFaqIndex, setOpenFaqIndex] = useState(null);
+
+    const toggleFaq = (index) => {
+        setOpenFaqIndex(openFaqIndex === index ? null : index);
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -21,34 +27,63 @@ const LandingPage = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Prevent scrolling when mobile menu is active
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+    }, [isMobileMenuOpen]);
+
     return (
         <div className="landing-page">
-            {/* Navigation */}
-            {/* Top Utility Bar - Hidden on scroll if desired, or kept? User just said top bar. 
-                Usually professional floating navs might hide utility or keep it. 
-                I will affect the 'landing-nav' which is the main one. */}
-
-            {/* Professional Navigation Bar */}
             <nav className={`landing-nav ${isScrolled ? 'scrolled' : ''}`}>
                 <div className="landing-logo-group">
                     <img src={mitLogo} alt="MIT ADT University" className="nav-logo" onError={(e) => e.target.style.display = 'none'} />
                     <div className="nav-divider"></div>
                     <div className="nav-text-group">
-                        <span className="nav-uni-name desktop-text">MIT Art, Design & Technology University</span>
-
+                        <span className="nav-uni-name desktop-name">MIT Art, Design & Technology University</span>
+                        <span className="nav-uni-name mobile-name">MIT ADT, PUNE</span>
                         <span className="nav-dept-name">Training & Placement Cell</span>
                     </div>
                 </div>
 
-                <div className="nav-links">
-                    <a href="#features">Features</a>
-                    <a href="#partners">Recruiting Partners</a>
-                    <a href="#contact">Contact Us</a>
+                {/* Desktop Links */}
+                <div className="nav-links desktop-only">
+                    <a href="#features">Platform Overview</a>
+                    <a href="#partners">Recruiters</a>
+                    <a href="#contact">Support</a>
                 </div>
 
-                <Link to="/login" className="auth-btn">
-                    Log in
+                {/* Desktop Auth Button */}
+                <Link to="/login" className="auth-btn desktop-only">
+                    <ShieldCheck size={16} style={{ marginRight: '6px' }} />
+                    Portal Login
                 </Link>
+
+                {/* Mobile Menu Toggle */}
+                <button
+                    className="mobile-menu-toggle"
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    aria-label="Toggle menu"
+                >
+                    {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+
+                {/* Mobile Menu Overlay */}
+                <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'active' : ''}`}>
+                    <div className="mobile-menu-content">
+                        <a href="#features" onClick={() => setIsMobileMenuOpen(false)}>Platform Overview</a>
+                        <a href="#partners" onClick={() => setIsMobileMenuOpen(false)}>Recruiters</a>
+                        <a href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Support</a>
+                        <div className="mobile-menu-divider"></div>
+                        <Link to="/login" className="mobile-auth-btn" onClick={() => setIsMobileMenuOpen(false)}>
+                            <ShieldCheck size={18} />
+                            Portal Login
+                        </Link>
+                    </div>
+                </div>
             </nav>
 
             {/* Redesigned Hero Section */}
@@ -72,23 +107,22 @@ const LandingPage = () => {
                         </h1>
 
                         <p className="hero-subtitle-new">
-                            MIT Art, Design & Technology University's unified platform connecting students with top recruiters across industries.
+                            Secure attendance, assessments, seat allocation, and placement workflows all in one unified system.
                         </p>
 
-                        <Link to="/login" className="hero-access-btn">
-                            Access Portal <ArrowRight size={20} />
-                        </Link>
-
-
-
-                        <div className="hero-location">
-                            <MapPin size={20} className="location-icon-svg" /> MIT Art, Design & Technology University, Pune
+                        <div className="hero-actions">
+                            <Link to="/login" className="hero-access-btn">
+                                Access Portal
+                            </Link>
+                            <div className="hero-trust-indicator">
+                                Used internally by MIT ADT Training & Placement Cell
+                            </div>
                         </div>
                     </div>
                 </div>
             </main>
 
-            {/* Stats Section moved above Engineered */}
+            {/* Stats Section with restored data */}
             <section className="landing-stats">
                 <div className="stats-row">
                     <div className="stat-item">
@@ -120,35 +154,41 @@ const LandingPage = () => {
                         <span className="stat-label">International Placements</span>
                     </div>
                 </div>
+                <div className="stats-context">
+                    * Metrics reflecting the scale of operations managed by the centralized Training & Placement Cell.
+                </div>
             </section>
 
-            {/* Engineered for Excellence Section */}
+            {/* Platform Overview Section (Institutional Redesign) */}
             <section className="engineered-section" id="features">
                 <div className="section-container">
-                    <h2 className="section-title">Engineered for Excellence</h2>
-                    <p className="section-subtitle">The technology behind successful careers.</p>
+                    <h2 className="section-title">A Unified Platform for Campus Operations</h2>
+                    <p className="section-subtitle">Streamlining attendance, security, and placement logistics through a single authoritative source.</p>
 
                     <div className="features-grid">
                         <div className="feature-card">
                             <div className="feature-icon-wrapper">
-                                <Smartphone size={32} strokeWidth={1.5} />
+                                <Smartphone size={28} strokeWidth={1.5} />
                             </div>
-                            <h3>Mobile First</h3>
-                            <p>Seamless attendance tracking on the go for students.</p>
+                            <h3>Digital Attendance & Identity</h3>
+                            <p><strong>Device-locked verification</strong> for absolute accountability across labs and exams.</p>
+                            <div className="d-flex card-subtext">Used for: Daily Labs, Exams, Entry Control</div>
                         </div>
                         <div className="feature-card">
                             <div className="feature-icon-wrapper">
-                                <ShieldCheck size={32} strokeWidth={1.5} />
+                                <ShieldCheck size={28} strokeWidth={1.5} />
                             </div>
-                            <h3>Secure Access</h3>
-                            <p>Device-lock technology ensures proxy-free integrity.</p>
+                            <h3>Assessment Integrity Protocol</h3>
+                            <p><strong>Zero-tolerance proxy prevention</strong> using real-time location and device binding.</p>
+                            <div className="d-flex card-subtext">Enforced for: Mid-terms, Placement Drives</div>
                         </div>
                         <div className="feature-card">
                             <div className="feature-icon-wrapper">
-                                <BarChart3 size={32} strokeWidth={1.5} />
+                                <BarChart3 size={28} strokeWidth={1.5} />
                             </div>
-                            <h3>Live Analytics</h3>
-                            <p>Real-time dashboards for faculty and administration.</p>
+                            <h3>Centralized Admin Control</h3>
+                            <p><strong>Live operational visibility</strong> into performance, seat allocation, and resources.</p>
+                            <div className="d-flex card-subtext">Access Level: Deans, HODs, Coordinators</div>
                         </div>
                     </div>
                 </div>
@@ -156,7 +196,7 @@ const LandingPage = () => {
 
             {/* Marquee Section */}
             <div className="marquee-wrapper" id="partners">
-                <div className="marquee-title-fancy">Recruiting Partner</div>
+                <div className="marquee-title-fancy">Recruiting Partners</div>
                 <div className="marquee-track">
                     {/* Double the items for seamless loop */}
                     {[
@@ -176,40 +216,93 @@ const LandingPage = () => {
                 </div>
             </div>
 
+            {/* Who Is This For Section */}
+            <section className="segments-section">
+                <div className="section-container">
+                    <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '3rem' }}>Who Is This Platform For?</h2>
+                    <div className="segments-grid">
+                        <div className="segment-item">
+                            <h4>Students</h4>
+                            <p>Secure access to placement drives, assessment schedules, and digital attendance records.</p>
+                        </div>
+                        <div className="segment-divider"></div>
+                        <div className="segment-item">
+                            <h4>Faculty & Admin</h4>
+                            <p>Live monitoring of sessions, automated reports, and centralized resource control.</p>
+                        </div>
+                        <div className="segment-divider"></div>
+                        <div className="segment-item">
+                            <h4>Placement Cell</h4>
+                            <p>End-to-end management of recruitment drives, company coordination, and compliance.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
 
 
             {/* FAQ Section */}
             <section className="faq-section">
                 <h2 className="faq-title">Common Queries</h2>
 
-                <div className="faq-item">
-                    <div className="faq-question">How does proxy prevention work?</div>
-                    <div className="faq-answer">
-                        Our Device Lock technology binds a student's account to their specific smartphone.
-                        Attempting to log in from another device triggers a security lock, preventing unauthorized attendance.
-                    </div>
-                </div>
-
-                <div className="faq-item">
-                    <div className="faq-question">Does the QR code expire?</div>
-                    <div className="faq-answer">
-                        Yes. The dynamic QR code rotates every few seconds. This prevents students from taking
-                        photos and sharing them with absent peers.
-                    </div>
-                </div>
-
-                <div className="faq-item">
-                    <div className="faq-question">Can parents track attendance?</div>
-                    <div className="faq-answer">
-                        We provide a dedicated parent portal (coming soon) and optional SMS notifications
-                        for daily absence, keeping guardians informed in real-time.
-                    </div>
+                <div className="faq-container">
+                    {[
+                        {
+                            q: "How does the system prevent proxy attendance?",
+                            a: "Our mandated Device Lock technology binds a student's account to their specific smartphone hardware ID. Attempting to log in or scan from an unauthorized device triggers a security lock, effectively eliminating proxy attempts."
+                        },
+                        {
+                            q: "Are QR codes time-bound and secure?",
+                            a: "Yes. The generated QR codes are dynamic and encrypted, rotating every few seconds. This prevents 'photo-sharing' or unauthorized distribution of codes to absent peers."
+                        },
+                        {
+                            q: "Is attendance visibility available to parents or guardians?",
+                            a: "Yes. The system supports a dedicated parent portal and automated SMS notifications, ensuring guardians are kept informed of daily attendance status and academic engagement."
+                        },
+                        {
+                            q: "What happens if a student changes their device?",
+                            a: "Device changes require administrative approval. A student must submit a formal request through the portal, which resets their hardware ID binding after verification by the department coordinator."
+                        },
+                        {
+                            q: "Is student data stored securely?",
+                            a: "All student data is encrypted at rest and in transit, adhering to institutional data privacy standards. Access is strictly role-based, ensuring only authorized faculty and administrators can view sensitive records."
+                        },
+                        {
+                            q: "Does the system scale for large auditoriums?",
+                            a: "Absolutely. The robust backend infrastructure handles thousands of concurrent requests, making it suitable for mass-attendance events, orientation sessions, and campus-wide placement drives."
+                        }
+                    ].map((item, index) => (
+                        <div
+                            key={index}
+                            className={`faq-item ${openFaqIndex === index ? 'active' : ''}`}
+                            onClick={() => toggleFaq(index)}
+                        >
+                            <div className="faq-question">
+                                {item.q}
+                                <ChevronDown
+                                    size={20}
+                                    className={`faq-icon ${openFaqIndex === index ? 'rotate' : ''}`}
+                                />
+                            </div>
+                            <div
+                                className="faq-answer-wrapper"
+                                style={{ maxHeight: openFaqIndex === index ? '200px' : '0' }}
+                            >
+                                <div className="faq-answer">
+                                    {item.a}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 <div className="contact-cta" id="contact">
-                    <h3>Still have questions?</h3>
-                    <p>Our support team is here to help you with any inquiries.</p>
-                    <a href="mailto:support@mituniversity.edu.in" className="contact-btn">Contact Us</a>
+                    <div className="contact-icon-wrapper">
+                        <Mail size={32} strokeWidth={1.5} />
+                    </div>
+                    <h3>MIT ADT Training & Placement Cell</h3>
+                    <p>For administrative assistance regarding the Smart Attendance & Placement Portal, please contact the centralized cell.</p>
+                    <a href="mailto:placements@mituniversity.edu.in" className="contact-btn">Email Placement Cell</a>
                 </div>
             </section>
 
@@ -251,7 +344,7 @@ const LandingPage = () => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    &copy; {new Date().getFullYear()} MIT Art, Design & Technology University. All rights reserved.
+                    &copy; 2026 MIT Art, Design & Technology University. All rights reserved.
                 </div>
             </footer>
         </div>

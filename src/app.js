@@ -10,7 +10,8 @@ const labRoutes = require('./routes/lab.routes');
 const assessmentRoutes = require('./routes/assessment.routes');
 const studentRoutes = require('./routes/student.routes');
 const placementRoutes = require('./routes/placement.routes');
-const { authenticateToken } = require('./middlewares/auth.middleware');
+const adminManagementRoutes = require('./routes/admin-management.routes');
+const { authenticateToken, verifySuperAdmin } = require('./middlewares/auth.middleware');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/labs', authenticateToken, labRoutes);
 app.use('/assessments', authenticateToken, assessmentRoutes);
 app.use('/student', authenticateToken, studentRoutes);
 app.use('/placement', authenticateToken, placementRoutes);
+app.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
 
 // Compatibility: Also mount under /api for robust frontend connecting
 const apiRouter = express.Router();
@@ -54,6 +56,7 @@ apiRouter.use('/labs', authenticateToken, labRoutes);
 apiRouter.use('/assessments', authenticateToken, assessmentRoutes);
 apiRouter.use('/student', authenticateToken, studentRoutes);
 apiRouter.use('/placement', authenticateToken, placementRoutes);
+apiRouter.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
 app.use('/api', apiRouter);
 
 // Global Error Handler (Ensure JSON response)

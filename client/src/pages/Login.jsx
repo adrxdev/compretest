@@ -63,32 +63,31 @@ export default function Login() {
     };
 
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-grey)' }}>
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
 
             {/* Minimal Header */}
-            <div style={{ padding: '2rem 1.5rem', background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.75rem' }}>
-                <img src="/mitadtlogo.png" alt="MIT Logo" style={{ height: '60px' }} />
+            <div style={{ padding: '1.5rem 2rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
+                <img src="/mitadtlogo.png" alt="MIT Logo" style={{ height: '52px' }} />
                 <div style={{ textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '1.25rem', margin: 0, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Training & Placement Cell</h1>
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>Smart Placement Portal</p>
+                    <h1 style={{ fontSize: '1.125rem', margin: 0, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Training & Placement Cell</h1>
                 </div>
             </div>
 
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: '#f3f4f6' }}>
-                <div className="mit-card" style={{ width: '100%', maxWidth: '400px', textAlign: 'center', padding: '2.5rem 2rem', background: 'white', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', borderRadius: '12px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#f8fafc' }}>
+                <div className="mit-card" style={{ width: '100%', maxWidth: '420px', textAlign: 'center', padding: '3rem 2.5rem', background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', borderRadius: '16px' }}>
 
-                    <h2 style={{ color: '#111827', marginTop: '0', marginBottom: '0.75rem', fontSize: '1.5rem', fontWeight: '700' }}>Student Access Portal</h2>
-                    <p style={{ color: '#4b5563', marginBottom: '2rem', fontSize: '1rem', lineHeight: '1.5' }}>
+                    <h2 style={{ color: '#0f172a', marginTop: '0', marginBottom: '0.5rem', fontSize: '1.75rem', fontWeight: '700', letterSpacing: '-0.025em' }}>Student Access Portal</h2>
+                    <p style={{ color: '#64748b', marginBottom: '2.5rem', fontSize: '1rem', lineHeight: '1.6' }}>
                         Sign in using your official university email to access placement activities.
                     </p>
 
-                    {error && <div style={{ marginBottom: '1.5rem', color: '#b91c1c', background: '#fef2f2', padding: '1rem', borderRadius: '8px', fontSize: '0.95rem', border: '1px solid #fecaca', fontWeight: '500' }}>{error}</div>}
+                    {error && <div style={{ marginBottom: '1.5rem', color: '#b91c1c', background: '#fef2f2', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #fecaca', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚠️ {error}</div>}
 
                     {step === 1 ? (
                         <form onSubmit={handleRequestOtp}>
                             <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>University Email / Personal Email</label>
-                                <div style={{ display: 'flex', gap: '0px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600', fontSize: '0.9rem' }}>University Email / Personal Email</label>
+                                <div style={{ display: 'flex', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
                                     <input
                                         className="mit-input"
                                         type="text"
@@ -97,48 +96,61 @@ export default function Login() {
                                         value={username}
                                         onChange={e => setUsername(e.target.value)}
                                         style={{
-                                            flex: 1,
-                                            height: '52px',
-                                            fontSize: '1rem',
-                                            borderColor: '#d1d5db',
-                                            color: '#1f2937',
+                                            flex: '1 1 70%',
+                                            height: '48px',
+                                            fontSize: '0.95rem',
+                                            borderColor: '#cbd5e1',
+                                            color: '#1e293b',
                                             background: '#ffffff',
                                             borderTopRightRadius: 0,
                                             borderBottomRightRadius: 0,
-                                            borderRight: 'none'
+                                            borderRight: 'none',
+                                            borderTopLeftRadius: '8px',
+                                            borderBottomLeftRadius: '8px',
+                                            padding: '0 1rem',
+                                            borderWidth: '1px',
+                                            borderStyle: 'solid',
+                                            minWidth: '0' // Prevent overflow
                                         }}
                                     />
                                     <select
                                         value={domain}
                                         onChange={e => setDomain(e.target.value)}
                                         style={{
-                                            height: '52px',
-                                            fontSize: '0.95rem',
-                                            borderColor: '#d1d5db',
-                                            color: '#4b5563',
-                                            background: '#f9fafb',
+                                            flex: '0 0 35%', // Slightly more than 30 to accommodate longer domain text if needed, or stick to 30. User said 70-30.
+                                            // Let's use 30% as requested but ensure text truncation or clear fit.
+                                            height: '48px',
+                                            fontSize: '0.9rem',
+                                            borderColor: '#cbd5e1',
+                                            color: '#475569',
+                                            background: '#f8fafc',
                                             borderTopLeftRadius: 0,
                                             borderBottomLeftRadius: 0,
-                                            padding: '0 1rem',
+                                            borderTopRightRadius: '8px',
+                                            borderBottomRightRadius: '8px',
+                                            padding: '0 0.5rem', // Reduce padding slightly
                                             fontWeight: '500',
                                             cursor: 'pointer',
-                                            maxWidth: '160px'
+                                            borderWidth: '1px',
+                                            borderStyle: 'solid',
+                                            borderLeft: '1px solid #e2e8f0'
                                         }}
                                         className="mit-input"
                                     >
                                         <option value="@gmail.com">@gmail.com</option>
                                         <option value="@students.mituniversity.edu.in">@students.mituniversity.edu.in</option>
+                                        <option value="@test.com">@test.com</option>
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%', height: '52px', fontSize: '1.05rem', justifyContent: 'center', fontWeight: 'bold' }} disabled={isLoading}>
+                            <button type="submit" className="mit-btn" style={{ width: '100%', height: '48px', fontSize: '1rem', justifyContent: 'center', fontWeight: '600', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '0.5rem' }} disabled={isLoading}>
                                 {isLoading ? 'Sending Code...' : 'Send Verification Code'}
                             </button>
                         </form>
                     ) : (
                         <form onSubmit={handleVerifyOtp}>
                             <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>Verification Code</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600', fontSize: '0.9rem' }}>Verification Code</label>
                                 <input
                                     className="mit-input"
                                     type="text"
@@ -147,27 +159,27 @@ export default function Login() {
                                     value={otp}
                                     onChange={e => setOtp(e.target.value)}
                                     disabled={isLoading}
-                                    style={{ height: '52px', letterSpacing: '4px', textAlign: 'center', fontSize: '1.5rem', fontWeight: '700', borderColor: '#d1d5db', color: '#1f2937', background: '#ffffff' }}
+                                    style={{ height: '48px', letterSpacing: '0.5em', textAlign: 'center', fontSize: '1.25rem', fontWeight: '700', borderColor: '#cbd5e1', color: '#1e293b', background: '#ffffff', borderRadius: '8px', width: '100%', padding: '0 1rem', borderStyle: 'solid', borderWidth: '1px' }}
                                     maxLength={6}
                                 />
                             </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%', height: '52px', fontSize: '1.05rem', justifyContent: 'center', fontWeight: 'bold' }} disabled={isLoading}>
+                            <button type="submit" className="mit-btn" style={{ width: '100%', height: '48px', fontSize: '1rem', justifyContent: 'center', fontWeight: '600', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.2s' }} disabled={isLoading}>
                                 {isLoading ? 'Verifying...' : 'Access Portal'}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setStep(1)}
-                                style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: 'var(--mit-purple)', fontSize: '0.95rem', width: '100%', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline', textUnderlineOffset: '4px' }}
+                                style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#64748b', fontSize: '0.9rem', width: '100%', cursor: 'pointer', fontWeight: '500' }}
                             >
-                                Tried the wrong email? Go back
+                                <span style={{ textDecoration: 'underline' }}>Change email address</span>
                             </button>
                         </form>
                     )}
                 </div>
             </div>
 
-            <div style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.8rem' }}>
-                &copy; 2024 MIT Art, Design and Technology University. All rights reserved.
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', borderTop: '1px solid #e2e8f0', background: 'white' }}>
+                &copy; 2026 MIT Art, Design and Technology University. All rights reserved.
             </div>
         </div>
     );

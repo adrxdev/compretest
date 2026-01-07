@@ -15,7 +15,9 @@ export default function AdminUsers() {
     const fetchUsers = async () => {
         try {
             const res = await api.get('/users');
-            setUsers(res.data);
+            // Filter out admins (role !== 'admin')
+            const studentsOnly = res.data.filter(u => u.role !== 'admin');
+            setUsers(studentsOnly);
             setLoading(false);
         } catch (error) {
             console.error('Failed to fetch users', error);
