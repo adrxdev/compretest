@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
+import logo from '../../assets/image.png';
 
 export default function AdminLayout({ children, title, actions }) {
     const { logout, user } = useAuth();
@@ -101,7 +102,7 @@ export default function AdminLayout({ children, title, actions }) {
                                 backgroundColor: '#f8fafc', border: '1px solid #e2e8f0',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                             }}>
-                                <img src="/mitadtlogo.png" alt="MIT" style={{ height: '24px', width: 'auto' }} />
+                                <img src={logo} alt="Logo" style={{ height: '24px', width: 'auto' }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', lineHeight: '1.2', whiteSpace: 'nowrap', letterSpacing: '-0.3px' }}>MIT ADT, Pune</span>

@@ -71,7 +71,17 @@ const cleanupOrphanedSessions = async () => {
     }
     return rowCount;
   } catch (error) {
-    console.error('[QR Model] Error cleaning up orphaned sessions:', error.message);
+    // Check if it's a connection error
+    if (error.code === 'ECONNREFUSED') {
+      console.log('[QR Model] ⚠️  Database connection failed. Ensure PostgreSQL is running.');
+      return 0;
+    }
+    // Check if tables don't exist yet (fresh database)
+    if (error.message && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+      console.log('[QR Model] ⚠️  Database tables not yet initialized. Skipping cleanup.');
+    } else {
+      console.error('[QR Model] Error cleaning up orphaned sessions:', error.message || error);
+    }
     return 0;
   }
 };

@@ -75,9 +75,10 @@
 }
 
 .nav-logo {
-    height: 55px;
+    height: 10rem;
     /* Slightly larger for clarity */
     width: auto;
+    border-radius: 50%;
 }
 
 .landing-nav.scrolled .nav-logo {

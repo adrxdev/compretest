@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { Maximize2, Minimize2, Users, Clock, ShieldAlert, Activity, PanelRightClose, PanelRightOpen, Pause, Play, Square } from 'lucide-react';
+import logo from '../assets/image.png';
 
 export default function EventDetails() {
     const { id } = useParams();
@@ -193,7 +194,7 @@ export default function EventDetails() {
                     opacity: 0.9, zIndex: 20,
                     boxSizing: 'border-box'
                 }}>
-                    <img src="/mitadtlogo.png" alt="MIT" style={{ height: '52px' }} />
+                    <img src={logo} alt="Logo" style={{ height: '52px' }} />
                     <div style={{ height: '36px', width: '1px', background: '#cbd5e1' }}></div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', lineHeight: 1.2 }}>MIT Art, Design & Technology University</span>

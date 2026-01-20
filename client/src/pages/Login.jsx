@@ -3,6 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
+import logo from '../assets/image.png';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -24,12 +25,6 @@ export default function Login() {
         try {
             const res = await api.post('/auth/request-otp', { email: fullEmail });
             console.log('OTP Response:', res.data);
-
-            // For Dev: pre-fill OTP if returned
-            if (res.data.dev_otp) {
-                alert(`✅ OTP Generated!\n\nCode: ${res.data.dev_otp}\n\n(In production, this will be emailed to you)`);
-                setOtp(res.data.dev_otp);
-            }
             setStep(2);
         } catch (err) {
             console.error('OTP Request Error:', err);
@@ -67,10 +62,7 @@ export default function Login() {
 
             {/* Minimal Header */}
             <div style={{ padding: '1.5rem 2rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <img src="/mitadtlogo.png" alt="MIT Logo" style={{ height: '52px' }} />
-                <div style={{ textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '1.125rem', margin: 0, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Training & Placement Cell</h1>
-                </div>
+                <img src={logo} alt="Logo" style={{ height: '52px' }} />
             </div>
 
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#f8fafc' }}>
@@ -78,7 +70,7 @@ export default function Login() {
 
                     <h2 style={{ color: '#0f172a', marginTop: '0', marginBottom: '0.5rem', fontSize: '1.75rem', fontWeight: '700', letterSpacing: '-0.025em' }}>Student Access Portal</h2>
                     <p style={{ color: '#64748b', marginBottom: '2.5rem', fontSize: '1rem', lineHeight: '1.6' }}>
-                        Sign in using your official university email to access placement activities.
+                        Sign in using your official email to access the portal.
                     </p>
 
                     {error && <div style={{ marginBottom: '1.5rem', color: '#b91c1c', background: '#fef2f2', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #fecaca', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚠️ {error}</div>}
@@ -138,8 +130,6 @@ export default function Login() {
                                         className="mit-input"
                                     >
                                         <option value="@gmail.com">@gmail.com</option>
-                                        <option value="@students.mituniversity.edu.in">@students.mituniversity.edu.in</option>
-                                        <option value="@test.com">@test.com</option>
                                     </select>
                                 </div>
                             </div>
@@ -179,7 +169,7 @@ export default function Login() {
             </div>
 
             <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', borderTop: '1px solid #e2e8f0', background: 'white' }}>
-                &copy; 2026 MIT Art, Design and Technology University. All rights reserved.
+                &copy; 2026 Pranavgawaii & Adrx.dev. All rights reserved.
             </div>
         </div>
     );

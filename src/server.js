@@ -31,12 +31,21 @@ const resumeActiveSessions = async () => {
         if (activeEvents.length === 0) console.log("✅ No active sessions found.");
 
     } catch (err) {
+        // Check if it's a database connection error
+        if (err.code === 'ECONNREFUSED') {
+            console.log("⚠️  Cannot connect to PostgreSQL database.");
+            console.log("ℹ️  Please ensure:");
+            console.log("   1. PostgreSQL is installed and running");
+            console.log("   2. DATABASE_URL in .env points to the correct PostgreSQL instance");
+            console.log("   3. Default connection: postgresql://user:password@localhost:5432/smart_attendance");
+            return;
+        }
         // Check if error is due to missing tables (fresh database)
         if (err.message && err.message.includes('relation') && err.message.includes('does not exist')) {
             console.log("⚠️  Database tables not yet created.");
             console.log("ℹ️  Run 'node scripts/setup-db.js' to initialize the database schema.");
         } else {
-            console.error("❌ Failed to resume sessions:", err.message);
+            console.error("❌ Failed to resume sessions:", err.message || err);
         }
     }
 };

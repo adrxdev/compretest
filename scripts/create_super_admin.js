@@ -11,7 +11,7 @@ const pool = new Pool({
 const createSuperAdmin = async () => {
     const client = await pool.connect();
     try {
-        const email = 'pranavvgawai@gmail.com';
+        const email = 'sendermchsashs@gmail.com';
         console.log(`Checking if user ${email} exists...`);
 
         const checkRes = await client.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -28,7 +28,7 @@ const createSuperAdmin = async () => {
                 RETURNING *;
             `;
             const values = [
-                'Pranav Gawai (Super Admin)',
+                'Administrator (Super Admin)',
                 email,
                 'SUPER-ADMIN-001',
                 'ADMIN',

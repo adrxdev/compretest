@@ -80,7 +80,7 @@ export default function AdminSettings() {
                             }}>
                                 {user?.role || 'Admin'}
                             </span>
-                            <span style={{ fontSize: '0.9rem' }}>mituniversity.edu.in</span>
+                            <span style={{ fontSize: '0.9rem' }}>Mintal Comprehensive Stand-Alone SHS</span>
                         </div>
                     </div>
                 </div>

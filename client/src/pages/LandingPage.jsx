@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Smartphone, ShieldCheck, BarChart3, MapPin, Menu, X, ChevronDown, Mail } from 'lucide-react';
 import './LandingPage.css';
-import mitLogo from '../assets/mitadtlogo.png';
-import heroVideo from '../assets/itbuilding.mp4';
+import compre from '../assets/compre.jpg';
+import bg from '../assets/bg.jpg';
 
 const LandingPage = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -40,20 +40,20 @@ const LandingPage = () => {
         <div className="landing-page">
             <nav className={`landing-nav ${isScrolled ? 'scrolled' : ''}`}>
                 <div className="landing-logo-group">
-                    <img src={mitLogo} alt="MIT ADT University" className="nav-logo" onError={(e) => e.target.style.display = 'none'} />
+                    <img src={compre} alt="Mintal Comprehensive Stand-Alone SHS" className="nav-logo" onError={(e) => e.target.style.display = 'none'} />
                     <div className="nav-divider"></div>
                     <div className="nav-text-group">
-                        <span className="nav-uni-name desktop-name">MIT Art, Design & Technology University</span>
-                        <span className="nav-uni-name mobile-name">MIT ADT, PUNE</span>
-                        <span className="nav-dept-name">Training & Placement Cell</span>
+                        <span className="nav-uni-name desktop-name">Mintal Comprehensive Stand-Alone SHS</span>
+                        <span className="nav-uni-name mobile-name">MCHSA-SHS</span>
+                        <span className="nav-dept-name">Senior High School Department</span>
                     </div>
                 </div>
 
                 {/* Desktop Links */}
                 <div className="nav-links desktop-only">
-                    <a href="#features">Platform Overview</a>
-                    <a href="#partners">Recruiters</a>
-                    <a href="#contact">Support</a>
+                    <a href="#strands">Strands</a>
+                    <a href="#fqa">FQA</a>
+                    <a href="#contact">Enrollment</a>
                 </div>
 
                 {/* Desktop Auth Button */}
@@ -74,9 +74,9 @@ const LandingPage = () => {
                 {/* Mobile Menu Overlay */}
                 <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'active' : ''}`}>
                     <div className="mobile-menu-content">
-                        <a href="#features" onClick={() => setIsMobileMenuOpen(false)}>Platform Overview</a>
-                        <a href="#partners" onClick={() => setIsMobileMenuOpen(false)}>Recruiters</a>
-                        <a href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Support</a>
+                        <a href="#strands" onClick={() => setIsMobileMenuOpen(false)}>Strands</a>
+                        <a href="#fqa" onClick={() => setIsMobileMenuOpen(false)}>FQA</a>
+                        <a href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Enrollment</a>
                         <div className="mobile-menu-divider"></div>
                         <Link to="/login" className="mobile-auth-btn" onClick={() => setIsMobileMenuOpen(false)}>
                             <ShieldCheck size={18} />
@@ -88,16 +88,7 @@ const LandingPage = () => {
 
             {/* Redesigned Hero Section */}
             <main className="landing-hero-new">
-                <video
-                    className="hero-bg-video"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                >
-                    <source src={heroVideo} type="video/mp4" />
-                </video>
+               <img src={bg} alt="bg" className='hero-bg-video'/>
                 <div className="hero-overlay">
                     <div className="hero-content">
                         {/* Badge removed to match new reference */}
@@ -115,7 +106,7 @@ const LandingPage = () => {
                                 Access Portal
                             </Link>
                             <div className="hero-trust-indicator">
-                                Used internally by MIT ADT Training & Placement Cell
+                                Developed by Pranavgawaii & Adrx
                             </div>
                         </div>
                     </div>
@@ -134,82 +125,31 @@ const LandingPage = () => {
                         <span className="stat-label">Visiting Companies</span>
                     </div>
                     <div className="stat-item">
-                        <span className="stat-value">₹61 LPA</span>
-                        <span className="stat-label">Highest Package</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-value">18+</span>
-                        <span className="stat-label">Specialized Schools</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-value">30+</span>
-                        <span className="stat-label">Global Tie-ups</span>
+                        <span className="stat-value">4</span>
+                        <span className="stat-label">Specialized Course</span>
                     </div>
                     <div className="stat-item">
                         <span className="stat-value">10,000+</span>
                         <span className="stat-label">Student Community</span>
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-value">28+</span>
-                        <span className="stat-label">International Placements</span>
-                    </div>
                 </div>
                 <div className="stats-context">
-                    * Metrics reflecting the scale of operations managed by the centralized Training & Placement Cell.
-                </div>
-            </section>
-
-            {/* Platform Overview Section (Institutional Redesign) */}
-            <section className="engineered-section" id="features">
-                <div className="section-container">
-                    <h2 className="section-title">A Unified Platform for Campus Operations</h2>
-                    <p className="section-subtitle">Streamlining attendance, security, and placement logistics through a single authoritative source.</p>
-
-                    <div className="features-grid">
-                        <div className="feature-card">
-                            <div className="feature-icon-wrapper">
-                                <Smartphone size={28} strokeWidth={1.5} />
-                            </div>
-                            <h3>Digital Attendance & Identity</h3>
-                            <p><strong>Device-locked verification</strong> for absolute accountability across labs and exams.</p>
-                            <div className="d-flex card-subtext">Used for: Daily Labs, Exams, Entry Control</div>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon-wrapper">
-                                <ShieldCheck size={28} strokeWidth={1.5} />
-                            </div>
-                            <h3>Assessment Integrity Protocol</h3>
-                            <p><strong>Zero-tolerance proxy prevention</strong> using real-time location and device binding.</p>
-                            <div className="d-flex card-subtext">Enforced for: Mid-terms, Placement Drives</div>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon-wrapper">
-                                <BarChart3 size={28} strokeWidth={1.5} />
-                            </div>
-                            <h3>Centralized Admin Control</h3>
-                            <p><strong>Live operational visibility</strong> into performance, seat allocation, and resources.</p>
-                            <div className="d-flex card-subtext">Access Level: Deans, HODs, Coordinators</div>
-                        </div>
-                    </div>
+                    * Not Real Data - For Demonstration Purposes Only
                 </div>
             </section>
 
             {/* Marquee Section */}
-            <div className="marquee-wrapper" id="partners">
-                <div className="marquee-title-fancy">Recruiting Partners</div>
+            <div className="marquee-wrapper" id="strands">
+                <div className="marquee-title-fancy">Available Strands</div>
                 <div className="marquee-track">
                     {/* Double the items for seamless loop */}
                     {[
-                        "ZS Associates", "Tech Mahindra", "Oracle", "Persistent", "Cognizant",
-                        "Bajaj", "Capgemini", "Razorpay", "Deloitte Digital", "Accenture",
-                        "Infosys", "TCS", "Palo Alto Networks", "Wipro", "and many more..."
+                        "STEM", "ABM","HUMS", "TVL-ICT", "TVL-EIM", "TVL-HE",
                     ].map((company, index) => (
                         <div key={index} className="marquee-item">{company}</div>
                     ))}
                     {[
-                        "ZS Associates", "Tech Mahindra", "Oracle", "Persistent", "Cognizant",
-                        "Bajaj", "Capgemini", "Razorpay", "Deloitte Digital", "Accenture",
-                        "Infosys", "TCS", "Palo Alto Networks", "Wipro", "and many more..."
+                        "STEM", "ABM","HUMS", "TVL-ICT", "TVL-EIM", "TVL-HE",
                     ].map((company, index) => (
                         <div key={`duplicate-${index}`} className="marquee-item">{company}</div>
                     ))}
@@ -230,11 +170,6 @@ const LandingPage = () => {
                             <h4>Faculty & Admin</h4>
                             <p>Live monitoring of sessions, automated reports, and centralized resource control.</p>
                         </div>
-                        <div className="segment-divider"></div>
-                        <div className="segment-item">
-                            <h4>Placement Cell</h4>
-                            <p>End-to-end management of recruitment drives, company coordination, and compliance.</p>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -242,7 +177,7 @@ const LandingPage = () => {
 
 
             {/* FAQ Section */}
-            <section className="faq-section">
+            <section className="faq-section" id='fqa'>
                 <h2 className="faq-title">Common Queries</h2>
 
                 <div className="faq-container">
@@ -300,9 +235,9 @@ const LandingPage = () => {
                     <div className="contact-icon-wrapper">
                         <Mail size={32} strokeWidth={1.5} />
                     </div>
-                    <h3>MIT ADT Training & Placement Cell</h3>
-                    <p>For administrative assistance regarding the Smart Attendance & Placement Portal, please contact the centralized cell.</p>
-                    <a href="mailto:placements@mituniversity.edu.in" className="contact-btn">Email Placement Cell</a>
+                    <h3>Want to Enroll?</h3>
+                    <p>For administrative assistance regarding to the Enrollment, please contact the Administration.</p>
+                    <a href="mailto:" className="contact-btn">Send Email</a>
                 </div>
             </section>
 
@@ -325,9 +260,9 @@ const LandingPage = () => {
                     </div>
                     <div className="footer-col">
                         <h4>Contact</h4>
-                        <a href="#">comp.eng@mituniversity.edu.in</a>
+                        <a href="#">test@project.com</a>
                         <a href="#">+91 123 456 7890</a>
-                        <a href="#">Pune, Maharashtra</a>
+                        <a href="#">Mintal, Davao City</a>
                         <div className="social-links-row">
                             <a href="#">Twitter</a>
                             <a href="#">LinkedIn</a>
@@ -344,7 +279,7 @@ const LandingPage = () => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    &copy; 2026 MIT Art, Design & Technology University. All rights reserved.
+                    &copy; 2026 Pranavgawaii & Adrx.dev. All rights reserved.
                 </div>
             </footer>
         </div>

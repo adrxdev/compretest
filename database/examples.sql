@@ -3,7 +3,7 @@
 -- 1. Insert Users
 -- Admin
 INSERT INTO users (name, email, role) 
-VALUES ('System Admin', 'admin@college.edu', 'admin');
+VALUES ('Administrator', 'administrator@gmail.com', 'admin');
 
 -- Student
 INSERT INTO users (name, email, enrollment_no, branch, role) 

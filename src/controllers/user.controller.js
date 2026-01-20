@@ -85,7 +85,7 @@ const createBulkUsers = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { name, enrollment_no } = req.body;
+        const { name, enrollment_no, branch, academic_year } = req.body;
 
         // Validation: Enrollment is required only for students
         if (!name) {
@@ -105,11 +105,11 @@ const updateProfile = async (req, res) => {
 
         const updateQuery = `
             UPDATE users 
-            SET name = $1, enrollment_no = $2
-            WHERE id = $3
-            RETURNING id, name, email, enrollment_no, role
+            SET name = $1, enrollment_no = $2, branch = $3, academic_year = $4
+            WHERE id = $5
+            RETURNING id, name, email, enrollment_no, role, branch, academic_year
         `;
-        const { rows } = await db.query(updateQuery, [name, enrollment_no, userId]);
+        const { rows } = await db.query(updateQuery, [name, enrollment_no, branch || null, academic_year || new Date().getFullYear(), userId]);
         const updatedUser = rows[0];
 
         // Generate NEW Token with updated info
@@ -119,7 +119,9 @@ const updateProfile = async (req, res) => {
                 email: updatedUser.email,
                 role: updatedUser.role,
                 name: updatedUser.name,
-                enrollment_no: updatedUser.enrollment_no
+                enrollment_no: updatedUser.enrollment_no,
+                branch: updatedUser.branch,
+                academic_year: updatedUser.academic_year
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }

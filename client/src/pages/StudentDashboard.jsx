@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { QrCode, LogOut, MapPin, ClipboardList, Home, History, ScanLine, X, Briefcase, ArrowRight, UserCheck } from 'lucide-react';
+import logo from '../assets/image.png';
 
 export default function StudentDashboard() {
     const { user, logout } = useAuth();
@@ -228,7 +229,7 @@ export default function StudentDashboard() {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <img src="/mitadtlogo.png" alt="Logo" style={{ height: '36px' }} />
+                    <img src={logo} alt="Logo" style={{ height: '36px' }} />
                     <div>
                         <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Student Portal</div>
                         <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>{user.name}</div>

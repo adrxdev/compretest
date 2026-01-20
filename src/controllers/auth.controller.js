@@ -121,9 +121,21 @@ const verifyOtp = async (req, res) => {
         console.log('[OTP Verify] User found:', !!user);
 
         if (!user) {
-            // User doesn't exist - reject login
-            console.log('[OTP Verify] User not found in database');
-            return res.status(403).json({ error: 'Access denied. Please contact admin to create your account.' });
+            // User doesn't exist - Create new user with basic info
+            console.log('[OTP Verify] User not found. Creating new account for:', email);
+            try {
+                const insertQuery = `
+                    INSERT INTO users (name, email, role, user_status)
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING id, email, role, name, enrollment_no, user_status
+                `;
+                const { rows } = await db.query(insertQuery, [email, email, 'student', 'active']);
+                user = rows[0];
+                console.log('[OTP Verify] New user created:', user.id);
+            } catch (err) {
+                console.error('[OTP Verify] Failed to create new user:', err);
+                return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+            }
         }
 
         // CHECK STATUS FOR EXISTING USERS
